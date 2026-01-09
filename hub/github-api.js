@@ -186,8 +186,174 @@ async function addProjectsToConfig(projects) {
     return newProjects.length;
 }
 
+/**
+ * Scan local directories for Git projects
+ * Returns projects NOT already in projects.json
+ * @returns {Promise<Array>} List of local Git projects
+ */
+async function scanLocalProjects() {
+    // Common project directories to scan
+    const searchPaths = [
+        path.join(process.env.HOME || '/Users/admin', 'projects'),
+        path.join(process.env.HOME || '/Users/admin', 'dev'),
+        path.join(process.env.HOME || '/Users/admin', 'code'),
+        path.join(process.env.HOME || '/Users/admin', 'Sites')
+    ];
+
+    // Load existing projects to filter duplicates
+    let existingPaths = new Set();
+    try {
+        const content = await fs.readFile(PROJECTS_PATH, 'utf-8');
+        const parsed = JSON.parse(content);
+        const existingArray = Array.isArray(parsed) ? parsed : (parsed.projects || []);
+        existingPaths = new Set(existingArray.map(p => p.path));
+    } catch {
+        // File doesn't exist, proceed with empty set
+    }
+
+    const localProjects = [];
+
+    for (const searchPath of searchPaths) {
+        try {
+            const dirs = await fs.readdir(searchPath);
+            for (const dir of dirs) {
+                const fullPath = path.join(searchPath, dir);
+
+                // Skip if already in projects.json
+                if (existingPaths.has(fullPath)) continue;
+
+                const gitPath = path.join(fullPath, '.git');
+
+                try {
+                    await fs.access(gitPath);
+                    // It's a git repo
+                    const remoteUrl = getGitRemoteUrl(fullPath);
+
+                    localProjects.push({
+                        name: dir,
+                        path: fullPath,
+                        hasGit: true,
+                        remoteUrl: remoteUrl || null
+                    });
+                } catch {
+                    // Not a git repo, skip
+                }
+            }
+        } catch {
+            // Directory doesn't exist, skip
+        }
+    }
+
+    // Sort: projects with remote first, then alphabetically
+    localProjects.sort((a, b) => {
+        if (a.remoteUrl && !b.remoteUrl) return -1;
+        if (!a.remoteUrl && b.remoteUrl) return 1;
+        return a.name.localeCompare(b.name);
+    });
+
+    return localProjects;
+}
+
+/**
+ * Add local projects to projects.json
+ * @param {Array} projects - Local projects to add
+ * @returns {Promise<number>} Number of projects added
+ */
+async function addLocalProjectsToConfig(projects) {
+    // Ensure data directory exists
+    const dataDir = path.dirname(PROJECTS_PATH);
+    try {
+        await fs.access(dataDir);
+    } catch {
+        await fs.mkdir(dataDir, { recursive: true });
+    }
+
+    // Read existing projects
+    let existingArray = [];
+    try {
+        const content = await fs.readFile(PROJECTS_PATH, 'utf-8');
+        const parsed = JSON.parse(content);
+        existingArray = Array.isArray(parsed) ? parsed : (parsed.projects || []);
+    } catch {
+        // File doesn't exist or is invalid, start fresh
+    }
+
+    // Filter out duplicates
+    const existingPaths = new Set(existingArray.map(p => p.path));
+    const newProjects = projects.filter(p => !existingPaths.has(p.path));
+
+    // Add new projects
+    for (const proj of newProjects) {
+        existingArray.push({
+            name: proj.name,
+            path: proj.path,
+            github: proj.remoteUrl || null
+        });
+    }
+
+    // Write back
+    await fs.writeFile(PROJECTS_PATH, JSON.stringify({ projects: existingArray }, null, 4), 'utf-8');
+
+    return newProjects.length;
+}
+
+/**
+ * Update github field for projects that have null but now have a remote
+ * @returns {Promise<number>} Number of projects updated
+ */
+async function updateProjectRemotes() {
+    // Read projects.json
+    let existingArray = [];
+    try {
+        const content = await fs.readFile(PROJECTS_PATH, 'utf-8');
+        const parsed = JSON.parse(content);
+        existingArray = Array.isArray(parsed) ? parsed : (parsed.projects || []);
+    } catch {
+        return 0; // No projects file
+    }
+
+    // Filter projects with null github field
+    const projectsToCheck = existingArray.filter(p =>
+        p.github === null || p.github === undefined
+    );
+
+    if (projectsToCheck.length === 0) {
+        return 0;
+    }
+
+    let updated = 0;
+
+    // Check each project for remote URL
+    for (const project of projectsToCheck) {
+        const remoteUrl = getGitRemoteUrl(project.path);
+        if (remoteUrl) {
+            // Update the project in the original array
+            const index = existingArray.findIndex(p => p.path === project.path);
+            if (index !== -1) {
+                existingArray[index].github = remoteUrl;
+                updated++;
+            }
+        }
+    }
+
+    // Only write if we made updates
+    if (updated > 0) {
+        await fs.writeFile(
+            PROJECTS_PATH,
+            JSON.stringify({ projects: existingArray }, null, 4),
+            'utf-8'
+        );
+    }
+
+    return updated;
+}
+
 module.exports = {
     getUserRepos,
     matchLocalRepos,
-    addProjectsToConfig
+    addProjectsToConfig,
+    scanLocalProjects,
+    addLocalProjectsToConfig,
+    updateProjectRemotes,
+    getGitRemoteUrl
 };

@@ -10,7 +10,7 @@ const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
-const { getUserRepos, matchLocalRepos, addProjectsToConfig } = require('./github-api');
+const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes } = require('./github-api');
 
 const app = express();
 const PORT = 3000;
@@ -476,6 +476,59 @@ app.post('/api/github/connect', async (req, res) => {
     } catch (error) {
         console.error('Error connecting repos:', error.message);
         res.status(500).json({ error: 'Failed to connect repositories' });
+    }
+});
+
+// ============================================
+// Local Projects Routes
+// ============================================
+
+// GET /api/local/scan — Scan for local Git projects
+app.get('/api/local/scan', async (req, res) => {
+    try {
+        const projects = await scanLocalProjects();
+        res.json(projects);
+    } catch (error) {
+        console.error('Error scanning local projects:', error.message);
+        res.status(500).json({ error: 'Failed to scan local projects' });
+    }
+});
+
+// POST /api/local/connect — Add selected local projects to monitoring
+app.post('/api/local/connect', async (req, res) => {
+    const { projects } = req.body;
+
+    if (!projects || !Array.isArray(projects) || projects.length === 0) {
+        return res.status(400).json({ error: 'No projects selected' });
+    }
+
+    try {
+        const count = await addLocalProjectsToConfig(projects);
+        res.json({
+            success: true,
+            added: count,
+            message: `Added ${count} project(s) to monitoring`
+        });
+    } catch (error) {
+        console.error('Error connecting local projects:', error.message);
+        res.status(500).json({ error: 'Failed to connect projects' });
+    }
+});
+
+// POST /api/projects/refresh-remotes — Manually trigger remote URL updates
+app.post('/api/projects/refresh-remotes', async (req, res) => {
+    try {
+        const count = await updateProjectRemotes();
+        res.json({
+            success: true,
+            updated: count,
+            message: count > 0
+                ? `Updated ${count} project(s) with new remote URLs`
+                : 'All projects already have URLs or no remotes found'
+        });
+    } catch (error) {
+        console.error('Error refreshing remotes:', error.message);
+        res.status(500).json({ error: 'Failed to refresh project remotes' });
     }
 });
 

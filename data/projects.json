@@ -2,7 +2,8 @@
     "projects": [
         {
             "name": "SPHERE",
-            "path": "/Users/admin/projects/personal-site"
+            "path": "/Users/admin/projects/personal-site",
+            "github": "https://github.com/Humanji7/personal-site.git"
         },
         {
             "name": "VOP",
@@ -10,7 +11,8 @@
         },
         {
             "name": "ReelStudio",
-            "path": "/Users/admin/projects/reelstudio"
+            "path": "/Users/admin/projects/reelstudio",
+            "github": "https://github.com/Humanji7/reelstudio.git"
         },
         {
             "name": "Parsertang",
@@ -21,6 +23,16 @@
             "name": "pointg",
             "path": "/Users/admin/projects/pointg",
             "github": "https://github.com/Humanji7/pointg"
+        },
+        {
+            "name": "reels-bot",
+            "path": "/Users/admin/projects/reels-bot",
+            "github": "https://github.com/Humanji7/reels-bot.git"
+        },
+        {
+            "name": "solobuddy",
+            "path": "/Users/admin/projects/bip-buddy",
+            "github": "https://github.com/Humanji7/solobuddy"
         }
     ]
 }

@@ -2,69 +2,85 @@
 
 ## Цель
 
-Создать кнопку "📁 Add Local" для обнаружения и подключения локальных Git-проектов, аналогично GitHub Connect.
+Добавить кнопку **"📁 Add Local"** для обнаружения и подключения локальных Git-проектов.
 
 ---
 
-## Контекст
+## План реализации
 
-- GitHub Connect уже реализован: [github-api.js](file:///Users/admin/projects/bip-buddy/hub/github-api.js)
-- Функция `matchLocalRepos()` уже сканирует локальные директории
-- UI паттерн модального окна уже существует
-
-## Файлы для изучения
-
-1. [server.js](file:///Users/admin/projects/bip-buddy/hub/server.js) — существующие API routes
-2. [github-api.js](file:///Users/admin/projects/bip-buddy/hub/github-api.js) — функция `matchLocalRepos()` и `addProjectsToConfig()`
-3. [app.js](file:///Users/admin/projects/bip-buddy/hub/app.js) — GitHub UI flow (~line 290-510)
-4. [index.html](file:///Users/admin/projects/bip-buddy/hub/index.html) — модал для репозиториев
-5. [projects.json](file:///Users/admin/projects/bip-buddy/data/projects.json) — текущий формат данных
+Полный план: [implementation_plan.md](file:///Users/admin/.gemini/antigravity/brain/be01bdcc-8e1c-4a19-9731-e7c607255050/implementation_plan.md)
 
 ---
 
-## Требования
+## Шаг 1: Backend — github-api.js
 
-### Backend
+**Файл**: [github-api.js](file:///Users/admin/projects/bip-buddy/hub/github-api.js)
 
-1. **GET /api/local/scan** — сканировать локальные директории:
-   - Использовать логику из `matchLocalRepos()` 
-   - Возвращать: `{ name, path, hasGit, remoteUrl? }`
-   - Директории для сканирования: `~/projects`, `~/dev`, `~/code`, `~/Sites`
+Добавь функцию `scanLocalProjects()`:
+- Сканирует: `~/projects`, `~/dev`, `~/code`, `~/Sites`
+- Для каждой папки с `.git` возвращает: `{ name, path, hasGit, remoteUrl }`
+- Исключает проекты, уже существующие в `projects.json`
+- Сортировка: сначала с remote, затем по имени
 
-2. **POST /api/local/connect** — добавить выбранные проекты:
-   - Аналогично `/api/github/connect`
-   - Использовать `addProjectsToConfig()`
-
-### Frontend
-
-1. **Кнопка "📁 Add Local"** в header рядом с GitHub Connect
-
-2. **Модальное окно** (по аналогии с github-repos-modal):
-   - Список найденных локальных проектов
-   - Чекбоксы для выбора
-   - Индикатор: есть ли Git remote
-   - Кнопка "Connect Selected"
-
-3. **Фильтрация**:
-   - Не показывать проекты, которые уже в `projects.json`
-   - Показывать только директории с `.git`
-
-### UI/UX
-
-- Использовать существующие CSS классы из GitHub модала
-- Добавить badge "🔗 Has Remote" для проектов с remote URL
-- Сортировка: сначала проекты с remote, затем по имени
+Экспортируй функцию в `module.exports`.
 
 ---
 
-## Порядок реализации
+## Шаг 2: Backend — server.js
 
-1. Создать API endpoint `/api/local/scan`
-2. Создать API endpoint `/api/local/connect`  
-3. Добавить HTML для кнопки и модала
-4. Добавить CSS стили (минимально, переиспользовать существующие)
-5. Добавить JS логику в app.js
-6. Тестировать в браузере
+**Файл**: [server.js](file:///Users/admin/projects/bip-buddy/hub/server.js)
+
+Добавь 2 endpoint'а после существующих GitHub routes (~line 490):
+
+```javascript
+// GET /api/local/scan
+app.get('/api/local/scan', async (req, res) => { ... });
+
+// POST /api/local/connect
+app.post('/api/local/connect', async (req, res) => { ... });
+```
+
+---
+
+## Шаг 3: Frontend — index.html
+
+**Файл**: [index.html](file:///Users/admin/projects/bip-buddy/hub/index.html)
+
+1. Добавь кнопку в `header-actions` (line 25):
+```html
+<button id="local-connect-btn" class="btn-local">📁 Add Local</button>
+```
+
+2. Добавь модальное окно после `github-repos-modal` (line 121):
+```html
+<div class="modal" id="local-repos-modal">...</div>
+```
+
+Используй структуру `github-repos-modal` как шаблон.
+
+---
+
+## Шаг 4: Frontend — app.js
+
+**Файл**: [app.js](file:///Users/admin/projects/bip-buddy/hub/app.js)
+
+Добавь секцию "Local Projects" после GitHub секции (после line 510):
+
+```javascript
+// ============================================
+// Local Projects Functions
+// ============================================
+
+const localConnectBtn = document.getElementById('local-connect-btn');
+// ... остальные DOM элементы
+
+async function loadLocalProjects() { ... }
+function renderLocalProjects(projects) { ... }
+async function connectLocalProjects() { ... }
+// ... event listeners
+```
+
+Используй GitHub-функции как образец (lines 302-492).
 
 ---
 
@@ -73,7 +89,14 @@
 ```bash
 cd /Users/admin/projects/bip-buddy/hub && npm start
 # Открыть http://localhost:3000
-# Нажать "📁 Add Local"
-# Выбрать проекты → Connect Selected
+# Нажать "📁 Add Local" → выбрать проекты → Connect
 # Проверить data/projects.json
 ```
+
+---
+
+## Контекст
+
+- **Существующий projects.json**: [projects.json](file:///Users/admin/projects/bip-buddy/data/projects.json)
+- **GitHub Connect паттерн**: изучи lines 302-492 в app.js
+- **Функция matchLocalRepos()**: уже сканирует директории — переиспользуй логику

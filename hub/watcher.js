@@ -10,6 +10,9 @@ const util = require('util');
 
 const execAsync = util.promisify(exec);
 
+// Import updateProjectRemotes for auto-updating github fields
+const { updateProjectRemotes } = require('./github-api');
+
 // Path to projects config
 const PROJECTS_CONFIG = path.join(__dirname, '..', 'data', 'projects.json');
 
@@ -215,6 +218,13 @@ async function scanAllProjects() {
  * Get the buddy message to display
  */
 async function getBuddyMessage() {
+    // Auto-update github fields for projects with new remotes
+    try {
+        await updateProjectRemotes();
+    } catch (e) {
+        console.error('Error updating project remotes:', e);
+    }
+
     const insights = await scanAllProjects();
 
     if (insights.length === 0) {

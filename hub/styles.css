@@ -620,6 +620,42 @@ body {
     background: #8AAE7F;
 }
 
+.btn-local {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--accent-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.btn-local:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.github-badge {
+    font-size: 0.6875rem;
+    padding: 2px 6px;
+    background: #24292e;
+    color: white;
+    border-radius: 4px;
+}
+
+.local-only-badge {
+    font-size: 0.6875rem;
+    padding: 2px 6px;
+    background: var(--text-muted);
+    color: var(--bg-card);
+    border-radius: 4px;
+}
+
 /* Repos Modal - Larger */
 .modal-large {
     max-width: 600px;

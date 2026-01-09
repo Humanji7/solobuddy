@@ -23,6 +23,7 @@
                     <span class="status-text">Watching 3 projects</span>
                 </div>
                 <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
+                <button id="local-connect-btn" class="btn-local">📁 Add Local</button>
             </div>
         </header>
 
@@ -116,6 +117,22 @@
                 </div>
                 <div class="modal-footer">
                     <button id="connect-selected" class="btn-submit" disabled>Connect Selected (0)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Local Projects Modal -->
+        <div class="modal" id="local-repos-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>📁 Local Git Projects</h3>
+                    <button class="modal-close" id="local-modal-close">&times;</button>
+                </div>
+                <div id="local-repos-list" class="repos-list">
+                    <div class="loading">Scanning local directories...</div>
+                </div>
+                <div class="modal-footer">
+                    <button id="connect-local-selected" class="btn-submit" disabled>Connect Selected (0)</button>
                 </div>
             </div>
         </div>
