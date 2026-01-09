@@ -11,6 +11,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes } = require('./github-api');
+const { sendToClaude } = require('./chat-api');
 
 const app = express();
 const PORT = 3000;
@@ -350,6 +351,45 @@ app.get('/api/buddy-message', async (req, res) => {
             type: 'calm',
             timestamp: new Date().toISOString()
         });
+    }
+});
+
+// POST /api/chat — Chat with Claude using project context
+app.post('/api/chat', async (req, res) => {
+    const { message, history = [] } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+        // Build context from projects and backlog
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        let projects = [];
+        try {
+            const projectsData = await fs.readFile(projectsPath, 'utf-8');
+            projects = JSON.parse(projectsData);
+        } catch (e) {
+            // No projects file yet
+        }
+
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        const context = { projects, backlogItems };
+
+        // Build messages array with history + new message
+        const messages = [
+            ...history,
+            { role: 'user', content: message }
+        ];
+
+        const response = await sendToClaude(messages, context);
+
+        res.json({ response });
+    } catch (error) {
+        console.error('Chat error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get response' });
     }
 });
 

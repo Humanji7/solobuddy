@@ -653,6 +653,149 @@ localReposModal.addEventListener('click', (e) => {
 connectLocalSelectedBtn.addEventListener('click', connectSelectedLocalProjects);
 
 // ============================================
+// Chat Interface Functions
+// ============================================
+
+const CHAT_STORAGE_KEY = 'solobuddy_chat_history';
+const chatMessages = document.getElementById('chat-messages');
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatSubmit = chatForm.querySelector('.chat-submit');
+
+let chatHistory = [];
+let isTyping = false;
+
+function loadChatHistory() {
+    try {
+        const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) {
+            chatHistory = JSON.parse(stored);
+            chatHistory.forEach(msg => renderChatMessage(msg.role, msg.text, false));
+            scrollChatToBottom();
+        }
+    } catch (e) {
+        console.error('Error loading chat history:', e);
+        chatHistory = [];
+    }
+}
+
+function saveChatHistory() {
+    try {
+        // Keep only last 50 messages
+        const toSave = chatHistory.slice(-50);
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+        console.error('Error saving chat history:', e);
+    }
+}
+
+function renderChatMessage(role, text, animate = true) {
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${role}`;
+    if (!animate) bubble.style.animation = 'none';
+
+    const p = document.createElement('p');
+    // Simple markdown-ish: convert \n to <br>
+    p.innerHTML = text.replace(/\n/g, '<br>');
+    bubble.appendChild(p);
+
+    chatMessages.appendChild(bubble);
+    scrollChatToBottom();
+}
+
+function scrollChatToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function showTypingIndicator() {
+    if (isTyping) return;
+    isTyping = true;
+
+    const indicator = document.createElement('div');
+    indicator.className = 'typing-indicator';
+    indicator.id = 'typing-indicator';
+    indicator.innerHTML = '<span></span><span></span><span></span>';
+    chatMessages.appendChild(indicator);
+    scrollChatToBottom();
+}
+
+function hideTypingIndicator() {
+    isTyping = false;
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+}
+
+async function sendChatMessage(text) {
+    if (!text.trim()) return;
+
+    // Add user message
+    chatHistory.push({ role: 'user', text });
+    renderChatMessage('user', text);
+    saveChatHistory();
+
+    // Disable input while waiting
+    chatInput.disabled = true;
+    chatSubmit.disabled = true;
+    showTypingIndicator();
+
+    try {
+        // Build history for API (convert role names)
+        const apiHistory = chatHistory.slice(-10).map(m => ({
+            role: m.role === 'buddy' ? 'assistant' : m.role,
+            content: m.text
+        }));
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: text,
+                history: apiHistory.slice(0, -1) // Exclude current message (server adds it)
+            })
+        });
+
+        hideTypingIndicator();
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to get response');
+        }
+
+        const data = await response.json();
+
+        // Add buddy response
+        chatHistory.push({ role: 'buddy', text: data.response });
+        renderChatMessage('buddy', data.response);
+        saveChatHistory();
+
+    } catch (error) {
+        hideTypingIndicator();
+        console.error('Chat error:', error);
+        showToast(error.message || 'Chat error', true);
+    } finally {
+        chatInput.disabled = false;
+        chatSubmit.disabled = false;
+        chatInput.focus();
+    }
+}
+
+chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    if (text) {
+        sendChatMessage(text);
+        chatInput.value = '';
+    }
+});
+
+// Keyboard: Enter to send, Escape to clear
+chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        chatInput.value = '';
+    }
+});
+
+// ============================================
 // Initialize
 // ============================================
 
@@ -660,4 +803,5 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAllData();
     checkGitHubStatus();
     handleOAuthCallback();
+    loadChatHistory();
 });
