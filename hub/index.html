@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoloBuddy Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🧬</span>
+                <span class="logo-text">SoloBuddy</span>
+            </div>
+            <div class="header-actions">
+                <div class="status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Watching 3 projects</span>
+                </div>
+                <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
+            </div>
+        </header>
+
+        <!-- Buddy Message -->
+        <div class="buddy-message" id="buddy-message">
+            <div class="buddy-avatar">🧬</div>
+            <div class="buddy-content">
+                <p class="message-text">Сканирую проекты...</p>
+                <span class="message-time"></span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Session Log Section -->
+            <section class="card session-log">
+                <div class="card-header">
+                    <h2>📓 Session Log</h2>
+                    <span class="badge">5 moments</span>
+                </div>
+                <div class="card-content" id="session-log-content">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Ideas Backlog Section -->
+            <section class="card backlog">
+                <div class="card-header">
+                    <h2>💡 Ideas Backlog</h2>
+                    <button class="btn-add" id="add-idea-btn">+ New Idea</button>
+                </div>
+                <div class="card-content" id="backlog-content">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Drafts Section -->
+            <section class="card drafts">
+                <div class="card-header">
+                    <h2>✍️ Drafts</h2>
+                </div>
+                <div class="card-content" id="drafts-content">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Add Idea Modal -->
+        <div class="modal" id="add-idea-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>✨ New Idea</h3>
+                    <button class="modal-close" id="modal-close">&times;</button>
+                </div>
+                <form id="idea-form">
+                    <div class="form-group">
+                        <label for="idea-title">Title</label>
+                        <input type="text" id="idea-title" placeholder="What's the hook?" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-format">Format</label>
+                        <select id="idea-format">
+                            <option value="thread">🧵 Thread</option>
+                            <option value="gif">👁️ GIF + Caption</option>
+                            <option value="video">🎵 Demo Video</option>
+                            <option value="post">📝 Short Post</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-priority">Priority</label>
+                        <select id="idea-priority">
+                            <option value="high">🔥 High</option>
+                            <option value="medium">⚡ Medium</option>
+                            <option value="low">💭 Ideas Pool</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-submit">Add to Backlog</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- GitHub Repos Modal -->
+        <div class="modal" id="github-repos-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>🔌 Select Repositories</h3>
+                    <button class="modal-close" id="repos-modal-close">&times;</button>
+                </div>
+                <div id="repos-list" class="repos-list">
+                    <div class="loading">Loading repositories...</div>
+                </div>
+                <div class="modal-footer">
+                    <button id="connect-selected" class="btn-submit" disabled>Connect Selected (0)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

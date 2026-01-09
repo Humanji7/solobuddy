@@ -1,0 +1,13 @@
+#!/bin/bash
+# BIP Buddy Post-Commit Hook
+# Appends commit info to commits-digest for later review
+
+COMMIT_MSG=$(git log -1 --pretty=%B)
+COMMIT_HASH=$(git log -1 --pretty=%h)
+REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+DATE=$(date +%Y-%m-%d)
+
+# Only log non-trivial commits
+if [[ ${#COMMIT_MSG} -gt 20 ]]; then
+  echo "- **$DATE** [$REPO_NAME] \`$COMMIT_HASH\`: $COMMIT_MSG" >> ~/projects/bip-buddy/ideas/commits-digest.md
+fi
