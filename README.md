@@ -1,38 +1,40 @@
-# 🛤️ BIP Buddy — Creator Hub
+# 🧬 SoloBuddy
 
-> **Build in Public** companion system for multi-project visibility.
+> Build in Public companion system with web hub.
 
-## Purpose
+## What is this?
 
-This is the central **Meta-Project Hub** that aggregates highlights and content opportunities from all active creative projects. It follows the "Hub + Spoke" architecture where:
+SoloBuddy is a creator hub for multi-project visibility and content generation. It includes:
 
-- **This Hub** = The command center for BIP (Build in Public) activities
-- **Spokes** = Individual project repositories (SPHERE, VOP, etc.)
+- **Web Hub** — Dashboard for session logs, ideas backlog, drafts
+- **GitHub Integration** — Auto-discover repos via OAuth
+- **Git Watcher** — Proactive buddy messages based on repo activity
+- **Subagent System** — Code simplification and BIP workflows
 
-## Quick Start for AI Agent
+## Quick Start
 
-1. Open this workspace to get the "Big Picture"
-2. Check `PROJECTS.md` for current highlights
-3. Review `ideas/` for content backlog
-4. Draft content in `drafts/`
+```bash
+cd hub && npm install && npm start
+```
 
-## Philosophy
+Open http://localhost:3000
 
-> The creative project is a **temple in the desert**.  
-> Marketing is not *selling* the temple — it's **building the road** so others can find it.
+## For AI Agents
 
-See [BUILD_IN_PUBLIC.md](./BUILD_IN_PUBLIC.md) for the full philosophy.
+→ Start with [CLAUDE.md](CLAUDE.md)
 
 ## Structure
 
 ```
-bip-buddy/
-├── README.md              # You are here
-├── PROFILE.md             # Creator identity & voice
-├── PROJECTS.md            # Live index of all projects
-├── BUILD_IN_PUBLIC.md     # Core philosophy & contract
-├── TWITTER.md             # X/Twitter strategy
-├── WORKFLOW.md            # Operational SOP
-├── ideas/                 # Content backlog
-└── drafts/                # WIP content for review
+solobuddy/
+├── CLAUDE.md           # Agent entry point
+├── hub/                # Web interface (Node.js)
+├── docs/               # Technical documentation
+├── ideas/              # Content backlog
+├── drafts/             # Work in progress
+└── archive/            # Old handoffs & prompts
 ```
+
+## Links
+
+- GitHub: https://github.com/Humanji7/solobuddy
