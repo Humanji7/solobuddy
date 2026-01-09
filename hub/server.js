@@ -354,7 +354,7 @@ app.get('/api/buddy-message', async (req, res) => {
     }
 });
 
-// POST /api/chat — Chat with Claude using project context
+// POST /api/chat — Chat with Claude using rich project context
 app.post('/api/chat', async (req, res) => {
     const { message, history = [] } = req.body;
 
@@ -363,20 +363,79 @@ app.post('/api/chat', async (req, res) => {
     }
 
     try {
-        // Build context from projects and backlog
+        // ============================================
+        // Gather Rich Context
+        // ============================================
+
+        // 1. Projects
         const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
         let projects = [];
         try {
             const projectsData = await fs.readFile(projectsPath, 'utf-8');
-            projects = JSON.parse(projectsData);
+            const parsed = JSON.parse(projectsData);
+            projects = parsed.projects || parsed;
         } catch (e) {
             // No projects file yet
         }
 
+        // 2. Backlog
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        const context = { projects, backlogItems };
+        // 3. Session Log
+        let sessionLog = [];
+        try {
+            const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8');
+            sessionLog = parseSessionLog(sessionContent);
+        } catch (e) {
+            // No session log
+        }
+
+        // 4. Drafts
+        let drafts = [];
+        try {
+            const files = await fs.readdir(PATHS.drafts);
+            const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'README.md');
+            drafts = await Promise.all(
+                mdFiles.map(filename => parseDraft(path.join(PATHS.drafts, filename)))
+            );
+        } catch (e) {
+            // No drafts
+        }
+
+        // 5. Git Activity (from watcher)
+        const { scanAllProjects, loadProjects, scanProject, getActivityStats } = require('./watcher');
+        let gitActivity = [];
+        try {
+            const allProjects = await loadProjects();
+            for (const project of allProjects) {
+                const scanResult = await scanProject(project.path);
+                const stats = getActivityStats(project.name, scanResult);
+                gitActivity.push(stats);
+            }
+        } catch (e) {
+            // Watcher not available
+        }
+
+        // 6. Buddy Message (current observation)
+        let buddyMessage = null;
+        try {
+            buddyMessage = await getBuddyMessage();
+        } catch (e) {
+            // No buddy message
+        }
+
+        // ============================================
+        // Build Full Context
+        // ============================================
+        const context = {
+            projects,
+            backlogItems,
+            sessionLog,
+            drafts,
+            gitActivity,
+            buddyMessage
+        };
 
         // Build messages array with history + new message
         const messages = [
