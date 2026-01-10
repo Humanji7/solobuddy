@@ -1044,3 +1044,142 @@ body {
         transform: translateX(0);
     }
 }
+
+/* ============================================
+   Help Button — Pulsing indicator
+   ============================================ */
+
+.help-btn {
+    width: 36px;
+    height: 36px;
+    background: var(--accent-soft);
+    border: none;
+    border-radius: 50%;
+    color: var(--bg-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    animation: helpPulse 3s ease-in-out infinite;
+}
+
+.help-btn:hover {
+    background: var(--accent-primary);
+    animation: none;
+    transform: scale(1.05);
+}
+
+@keyframes helpPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(232, 184, 122, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(232, 184, 122, 0);
+    }
+}
+
+/* Help Tooltip */
+.help-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 260px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: var(--spacing-md);
+    z-index: 50;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: all 0.2s;
+}
+
+.help-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.help-tooltip-content strong {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.help-tooltip-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.help-tooltip-content li {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.help-tooltip-content li:last-child {
+    border-bottom: none;
+}
+
+/* ============================================
+   Legacy Sections — Collapsible
+   ============================================ */
+
+.legacy-sections {
+    margin-top: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+}
+
+.legacy-sections summary {
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    transition: color 0.2s;
+}
+
+.legacy-sections summary::-webkit-details-marker {
+    display: none;
+}
+
+.legacy-sections summary::before {
+    content: '▸';
+    transition: transform 0.2s;
+}
+
+.legacy-sections[open] summary::before {
+    transform: rotate(90deg);
+}
+
+.legacy-sections summary:hover {
+    color: var(--text-primary);
+}
+
+.legacy-sections .main {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+}
+
+/* ============================================
+   Chat Form — Relative for tooltip positioning
+   ============================================ */
+
+.chat-form {
+    position: relative;
+}

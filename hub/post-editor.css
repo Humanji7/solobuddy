@@ -1,0 +1,237 @@
+/* ============================================
+   Post Editor Panel — Slide-out Workbench
+   ============================================ */
+
+/* Panel Container */
+.post-editor-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 420px;
+    max-width: 90vw;
+    height: 100vh;
+    background: rgba(30, 30, 40, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+
+    /* Slide animation */
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.post-editor-panel.open {
+    transform: translateX(0);
+}
+
+/* Panel Header */
+.post-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.post-editor-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.post-editor-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.post-editor-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Platform Badges */
+.platform-badges {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.platform-badge.twitter {
+    background: rgba(29, 155, 240, 0.15);
+    color: #1D9BF0;
+    border-color: rgba(29, 155, 240, 0.3);
+}
+
+.platform-badge.twitter:hover {
+    background: rgba(29, 155, 240, 0.25);
+}
+
+.platform-badge.telegram {
+    background: rgba(0, 136, 204, 0.15);
+    color: #0088CC;
+    border-color: rgba(0, 136, 204, 0.3);
+}
+
+.platform-badge.telegram:hover {
+    background: rgba(0, 136, 204, 0.25);
+}
+
+.platform-badge.active {
+    border-color: currentColor;
+}
+
+/* Editor Content */
+.post-editor-content {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.post-textarea {
+    flex: 1;
+    min-height: 200px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.post-textarea:focus {
+    outline: none;
+    border-color: rgba(138, 43, 226, 0.5);
+}
+
+.post-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Character Counter */
+.char-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.char-counter.warning {
+    color: #FFA500;
+}
+
+.char-counter.danger {
+    color: #FF4444;
+}
+
+/* Panel Footer */
+.post-editor-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.post-editor-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-copy {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.btn-copy:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-copy.copied {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.4);
+    color: #4CAF50;
+}
+
+/* Editor Toggle Button (in header) */
+.btn-editor-toggle {
+    background: linear-gradient(135deg, #8A2BE2, #6B21A8);
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-editor-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+}
+
+/* Overlay when panel is open */
+.post-editor-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.post-editor-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .post-editor-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+}
