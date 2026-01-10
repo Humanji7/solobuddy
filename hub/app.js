@@ -1016,6 +1016,38 @@ document.addEventListener('DOMContentLoaded', () => {
     handleOAuthCallback();
     loadChatHistory();
 
+    // Initialize Post Editor
+    if (typeof initPostEditor === 'function') {
+        initPostEditor();
+    }
+
+    // Editor toggle button
+    const editorToggleBtn = document.getElementById('editor-toggle-btn');
+    if (editorToggleBtn) {
+        editorToggleBtn.addEventListener('click', () => {
+            if (typeof openPostEditor === 'function') {
+                openPostEditor();
+            }
+        });
+    }
+
+    // Help button toggle
+    const helpBtn = document.getElementById('help-btn');
+    const helpTooltip = document.getElementById('help-tooltip');
+    if (helpBtn && helpTooltip) {
+        helpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            helpTooltip.classList.toggle('visible');
+        });
+
+        // Close tooltip on click outside
+        document.addEventListener('click', (e) => {
+            if (!helpBtn.contains(e.target) && !helpTooltip.contains(e.target)) {
+                helpTooltip.classList.remove('visible');
+            }
+        });
+    }
+
     // Nielsen: Show first-run tooltip for new users
     if (typeof showFirstRunTooltip === 'function') {
         setTimeout(showFirstRunTooltip, 2000); // Delay to not overwhelm

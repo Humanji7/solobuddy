@@ -7,6 +7,7 @@
     <title>SoloBuddy Hub</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="action-cards.css">
+    <link rel="stylesheet" href="post-editor.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -25,6 +26,7 @@
                 </div>
                 <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
                 <button id="local-connect-btn" class="btn-local">📁 Add Local</button>
+                <button id="editor-toggle-btn" class="btn-editor-toggle">✎ Write</button>
             </div>
         </header>
 
@@ -56,44 +58,58 @@
             <form class="chat-form" id="chat-form">
                 <input type="text" id="chat-input" placeholder="Ask me anything..." aria-label="Chat message"
                     autocomplete="off">
+                <button type="button" id="help-btn" class="help-btn" title="Quick commands">?</button>
+                <div class="help-tooltip" id="help-tooltip">
+                    <div class="help-tooltip-content">
+                        <strong>💡 Быстрые команды:</strong>
+                        <ul>
+                            <li>"добавь идею..." — создать идею</li>
+                            <li>"та штука про..." — найти идею</li>
+                            <li>"новая идея" — пустая форма</li>
+                        </ul>
+                    </div>
+                </div>
                 <button type="submit" class="chat-submit" aria-label="Send">→</button>
             </form>
         </section>
 
-        <!-- Main Content -->
-        <main class="main">
-            <!-- Session Log Section -->
-            <section class="card session-log">
-                <div class="card-header">
-                    <h2>📓 Session Log</h2>
-                    <span class="badge">5 moments</span>
-                </div>
-                <div class="card-content" id="session-log-content">
-                    <!-- Populated by JS -->
-                </div>
-            </section>
+        <!-- Main Content (collapsed by default) -->
+        <details class="legacy-sections" id="legacy-sections">
+            <summary>📦 Data Sections (Session Log, Backlog, Drafts)</summary>
+            <main class="main">
+                <!-- Session Log Section -->
+                <section class="card session-log">
+                    <div class="card-header">
+                        <h2>📓 Session Log</h2>
+                        <span class="badge">5 moments</span>
+                    </div>
+                    <div class="card-content" id="session-log-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
 
-            <!-- Ideas Backlog Section -->
-            <section class="card backlog">
-                <div class="card-header">
-                    <h2>💡 Ideas Backlog</h2>
-                    <button class="btn-add" id="add-idea-btn">+ New Idea</button>
-                </div>
-                <div class="card-content" id="backlog-content">
-                    <!-- Populated by JS -->
-                </div>
-            </section>
+                <!-- Ideas Backlog Section -->
+                <section class="card backlog">
+                    <div class="card-header">
+                        <h2>💡 Ideas Backlog</h2>
+                        <button class="btn-add" id="add-idea-btn">+ New Idea</button>
+                    </div>
+                    <div class="card-content" id="backlog-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
 
-            <!-- Drafts Section -->
-            <section class="card drafts">
-                <div class="card-header">
-                    <h2>✍️ Drafts</h2>
-                </div>
-                <div class="card-content" id="drafts-content">
-                    <!-- Populated by JS -->
-                </div>
-            </section>
-        </main>
+                <!-- Drafts Section -->
+                <section class="card drafts">
+                    <div class="card-header">
+                        <h2>✍️ Drafts</h2>
+                    </div>
+                    <div class="card-content" id="drafts-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+            </main>
+        </details>
 
         <!-- Add Idea Modal -->
         <div class="modal" id="add-idea-modal">
@@ -160,9 +176,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Post Editor Panel -->
+        <div class="post-editor-overlay" id="post-editor-overlay"></div>
+        <aside class="post-editor-panel" id="post-editor-panel">
+            <header class="post-editor-header">
+                <h3>✍️ Draft Post</h3>
+                <button class="post-editor-close" aria-label="Close">×</button>
+            </header>
+            <div class="platform-badges">
+                <span class="platform-badge twitter active">🐦 Twitter</span>
+                <span class="platform-badge telegram">✈️ Telegram</span>
+            </div>
+            <div class="post-editor-content">
+                <textarea id="post-content" class="post-textarea" placeholder="Start writing your post..."></textarea>
+                <div class="char-counter" id="char-counter">0 / 280</div>
+            </div>
+            <footer class="post-editor-footer">
+                <button id="copy-draft-btn" class="post-editor-btn btn-copy">📋 Copy</button>
+            </footer>
+        </aside>
     </div>
 
     <script src="action-cards.js"></script>
+    <script src="post-editor.js"></script>
     <script src="app.js"></script>
 </body>
 
