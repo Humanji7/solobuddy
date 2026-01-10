@@ -21,6 +21,9 @@
 
 ## Medium Priority (Needs development)
 
+- [ ] **про живой orb**
+  - Format: Thread
+
 - [ ] **"Why a creature instead of a portfolio"**
   - Format: Long post or thread
   - Explore: The philosophy of personal sites as living entities
