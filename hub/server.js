@@ -12,6 +12,7 @@ const path = require('path');
 const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
 const { sendToClaude } = require('./chat-api');
+const { parseIntent } = require('./intent-parser');
 
 const app = express();
 const PORT = 3000;
@@ -360,6 +361,51 @@ app.get('/api/buddy-message', async (req, res) => {
             timestamp: new Date().toISOString(),
             projectsCount: 0
         });
+    }
+});
+
+// POST /api/intent/parse — Parse user message for intents
+app.post('/api/intent/parse', async (req, res) => {
+    const { message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+        // Gather context for intent parsing
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        let projects = [];
+        try {
+            const projectsData = await fs.readFile(projectsPath, 'utf-8');
+            const parsed = JSON.parse(projectsData);
+            projects = parsed.projects || parsed;
+        } catch (e) { /* no projects */ }
+
+        // Backlog items
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        // Git activity
+        const { loadProjects, scanProject, getActivityStats } = require('./watcher');
+        let gitActivity = [];
+        try {
+            const allProjects = await loadProjects();
+            for (const project of allProjects.slice(0, 10)) { // Limit for performance
+                const scanResult = await scanProject(project.path);
+                const stats = getActivityStats(project.name, scanResult);
+                gitActivity.push(stats);
+            }
+        } catch (e) { /* watcher not available */ }
+
+        // Parse intent
+        const context = { backlogItems, projects, gitActivity };
+        const result = parseIntent(message, context);
+
+        res.json(result);
+    } catch (error) {
+        console.error('Intent parse error:', error.message);
+        res.status(500).json({ error: 'Failed to parse intent' });
     }
 });
 
