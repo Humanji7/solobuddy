@@ -869,6 +869,87 @@ async function sendChatMessage(text) {
     showTypingIndicator();
 
     try {
+        // ============================================
+        // Step 1: Check for actionable intent first
+        // ============================================
+        const intentResponse = await fetch('/api/intent/parse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+
+        if (intentResponse.ok) {
+            const intentData = await intentResponse.json();
+
+            // If we have an actionable intent with high enough confidence, show Action Card
+            if (intentData.actionCard && intentData.confidence >= 60) {
+                hideTypingIndicator();
+
+                // Render Action Card in chat
+                const card = renderActionCard(intentData.actionCard, {
+                    onAction: async (action, data) => {
+                        if (action === 'add') {
+                            // Add to backlog via existing API
+                            const response = await fetch('/api/backlog', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    title: data.title,
+                                    format: data.format,
+                                    priority: data.priority
+                                })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Failed to add idea');
+                            }
+
+                            // Refresh backlog display
+                            backlogData = await fetchBacklog();
+                            renderBacklog();
+
+                            return { id: Date.now(), ...data }; // Return for undo
+                        }
+
+                        if (action === 'clarify') {
+                            // User said "not this" - add follow-up prompt
+                            chatInput.value = 'Нет, я имел в виду ';
+                            chatInput.focus();
+                        }
+                    },
+                    onDismiss: () => {
+                        // User dismissed card - continue with normal chat
+                        console.log('Action card dismissed');
+                    },
+                    onFeedback: (type, data) => {
+                        console.log('Feedback:', type, data);
+                        // TODO: Store feedback for learning
+                    }
+                });
+
+                if (card) {
+                    chatMessages.appendChild(card);
+                    scrollChatToBottom();
+
+                    // Add a brief buddy acknowledgment
+                    chatHistory.push({
+                        role: 'buddy',
+                        text: `Понял! ${intentData.intentType === 'add_to_backlog' ? 'Добавляем идею?' : 'Вот что нашёл:'}`
+                    });
+                    saveChatHistory();
+
+                    chatInput.disabled = false;
+                    chatSubmit.disabled = false;
+                    chatInput.focus();
+                    return; // Don't proceed to Claude chat
+                }
+            }
+        }
+
+        // ============================================
+        // Step 2: Fallback to Claude chat if no Action Card
+        // ============================================
+
         // Build history for API (convert role names)
         const apiHistory = chatHistory.slice(-10).map(m => ({
             role: m.role === 'buddy' ? 'assistant' : m.role,
@@ -934,4 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
     checkGitHubStatus();
     handleOAuthCallback();
     loadChatHistory();
+
+    // Nielsen: Show first-run tooltip for new users
+    if (typeof showFirstRunTooltip === 'function') {
+        setTimeout(showFirstRunTooltip, 2000); // Delay to not overwhelm
+    }
 });

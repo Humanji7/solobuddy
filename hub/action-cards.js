@@ -1,0 +1,420 @@
+/* ============================================
+   SoloBuddy Hub — Action Cards Components
+   Nielsen-Approved Frontend Implementation
+   ============================================ */
+
+/**
+ * Render an Action Card based on type
+ * @param {Object} actionCard - Action card specification from intent-parser
+ * @param {Object} options - { onAction, onDismiss, onFeedback }
+ * @returns {HTMLElement}
+ */
+function renderActionCard(actionCard, options = {}) {
+    if (!actionCard) return null;
+
+    const { type } = actionCard;
+
+    switch (type) {
+        case 'AddIdeaCard':
+            return renderAddIdeaCard(actionCard, options);
+        case 'FindIdeaCard':
+            return renderFindIdeaCard(actionCard, options);
+        case 'ActivityCard':
+            return renderActivityCard(actionCard, options);
+        case 'ChangePriorityCard':
+            return renderChangePriorityCard(actionCard, options);
+        default:
+            console.warn('Unknown action card type:', type);
+            return null;
+    }
+}
+
+/**
+ * AddIdeaCard — Add new idea or link existing to backlog
+ */
+function renderAddIdeaCard(data, options = {}) {
+    const {
+        title,
+        existingIdea,
+        suggestedPriority,
+        suggestedFormat,
+        links,
+        confidence,
+        confidenceLevel,
+        confidenceBadge,
+        hasDuplicateWarning
+    } = data;
+
+    const card = document.createElement('div');
+    card.className = 'action-card add-idea';
+    card.dataset.cardType = 'AddIdeaCard';
+
+    // Nielsen: Duplicate warning
+    const duplicateLink = links?.find(l => l.type === 'duplicate_warning');
+    const contextLink = links?.find(l => l.type === 'recent_activity');
+
+    card.innerHTML = `
+        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        
+        <div class="card-header">
+            <div class="card-title">🔮 ${escapeHtml(title)}</div>
+            <span class="confidence-badge ${confidenceLevel}">${confidenceBadge} ${confidence}%</span>
+        </div>
+        
+        ${duplicateLink ? `
+            <div class="card-suggestions warning">
+                <span class="suggestion-text">${duplicateLink.suggestion}</span>
+                <button class="link-btn" data-action="use-existing">Использовать</button>
+            </div>
+        ` : ''}
+        
+        <div class="card-controls">
+            <select name="format" class="format-select">
+                <option value="thread" ${suggestedFormat === 'thread' ? 'selected' : ''}>Thread</option>
+                <option value="gif" ${suggestedFormat === 'gif' ? 'selected' : ''}>GIF + Caption</option>
+                <option value="post" ${suggestedFormat === 'post' ? 'selected' : ''}>Short Post</option>
+                <option value="video" ${suggestedFormat === 'video' ? 'selected' : ''}>Video</option>
+            </select>
+            
+            <div class="priority-toggle">
+                <button class="priority-btn ${suggestedPriority === 'high' ? 'active' : ''}" data-value="high">🔥</button>
+                <button class="priority-btn ${suggestedPriority === 'medium' ? 'active' : ''}" data-value="medium">⚡</button>
+                <button class="priority-btn ${suggestedPriority === 'low' ? 'active' : ''}" data-value="low">💭</button>
+            </div>
+        </div>
+        
+        ${contextLink ? `
+            <div class="card-suggestions">
+                <span class="suggestion-text">💡 ${contextLink.suggestion}</span>
+                <button class="link-btn" data-action="add-link">Связать</button>
+            </div>
+        ` : ''}
+        
+        <div class="card-actions">
+            <button class="btn-primary" data-action="add">Добавить</button>
+            <button class="btn-secondary" data-action="cancel">Отмена</button>
+        </div>
+        
+        <div class="card-feedback">
+            <button class="feedback-btn positive" data-feedback="correct" title="Buddy понял правильно">👍</button>
+            <button class="feedback-btn negative" data-feedback="wrong" title="Не то что я имел в виду">👎</button>
+            <span class="not-this-link" data-action="not-this">Не то? Уточни</span>
+        </div>
+    `;
+
+    // Bind event handlers
+    bindAddIdeaCardEvents(card, data, options);
+
+    return card;
+}
+
+/**
+ * Bind events for AddIdeaCard
+ */
+function bindAddIdeaCardEvents(card, data, options) {
+    // Dismiss
+    card.querySelector('.card-dismiss').addEventListener('click', () => {
+        card.remove();
+        options.onDismiss?.();
+    });
+
+    // Priority toggle
+    card.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            card.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    // Add button
+    card.querySelector('[data-action="add"]').addEventListener('click', async () => {
+        const format = card.querySelector('.format-select').value;
+        const priority = card.querySelector('.priority-btn.active')?.dataset.value || 'medium';
+
+        // Show loading
+        card.classList.add('loading');
+
+        try {
+            const result = await options.onAction?.('add', {
+                title: data.title,
+                format,
+                priority,
+                linkedProject: data.links?.find(l => l.type === 'recent_activity')?.project
+            });
+
+            // Success - remove card and show undo toast
+            card.remove();
+            showUndoToast(`Добавил "${data.title}" в backlog`, async () => {
+                await options.onAction?.('undo', result);
+            });
+
+        } catch (error) {
+            card.classList.remove('loading');
+            showCardError(card, error.message || 'Не удалось добавить');
+        }
+    });
+
+    // Cancel button
+    card.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        card.remove();
+        options.onDismiss?.();
+    });
+
+    // Use existing (duplicate)
+    const useExistingBtn = card.querySelector('[data-action="use-existing"]');
+    if (useExistingBtn) {
+        useExistingBtn.addEventListener('click', () => {
+            options.onAction?.('use-existing', data.links.find(l => l.type === 'duplicate_warning')?.existingIdea);
+            card.remove();
+        });
+    }
+
+    // Add link to project
+    const addLinkBtn = card.querySelector('[data-action="add-link"]');
+    if (addLinkBtn) {
+        addLinkBtn.addEventListener('click', () => {
+            addLinkBtn.textContent = '✓ Связано';
+            addLinkBtn.disabled = true;
+        });
+    }
+
+    // Feedback buttons
+    card.querySelectorAll('.feedback-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const feedback = btn.dataset.feedback;
+            options.onFeedback?.(feedback, data);
+
+            // Visual feedback
+            btn.style.transform = 'scale(1.2)';
+            setTimeout(() => btn.style.transform = '', 200);
+        });
+    });
+
+    // "Not this" link
+    const notThisLink = card.querySelector('[data-action="not-this"]');
+    if (notThisLink) {
+        notThisLink.addEventListener('click', () => {
+            options.onAction?.('clarify', data);
+            card.remove();
+        });
+    }
+}
+
+/**
+ * FindIdeaCard — Show found idea with options
+ */
+function renderFindIdeaCard(data, options = {}) {
+    const { foundIdea, searchQuery, confidence, confidenceLevel, confidenceBadge } = data;
+
+    const card = document.createElement('div');
+    card.className = 'action-card find-idea';
+    card.dataset.cardType = 'FindIdeaCard';
+
+    if (foundIdea) {
+        card.innerHTML = `
+            <button class="card-dismiss" aria-label="Закрыть">×</button>
+            
+            <div class="card-header">
+                <div class="card-title">🔍 Нашёл: ${escapeHtml(foundIdea.title)}</div>
+                <span class="confidence-badge ${confidenceLevel}">${confidenceBadge} ${confidence}%</span>
+            </div>
+            
+            <div class="card-controls">
+                <span class="idea-meta">
+                    ${getPriorityEmoji(foundIdea.priority)} ${foundIdea.priority} · ${foundIdea.format}
+                </span>
+            </div>
+            
+            <div class="card-actions">
+                <button class="btn-primary" data-action="edit">Редактировать</button>
+                <button class="btn-secondary" data-action="view">Показать</button>
+            </div>
+            
+            <div class="card-feedback">
+                <button class="feedback-btn positive" data-feedback="correct">👍</button>
+                <button class="feedback-btn negative" data-feedback="wrong">👎</button>
+                <span class="not-this-link" data-action="not-this">Не та идея</span>
+            </div>
+        `;
+    } else {
+        card.innerHTML = `
+            <button class="card-dismiss" aria-label="Закрыть">×</button>
+            
+            <div class="card-header">
+                <div class="card-title">🔍 Не нашёл "${escapeHtml(searchQuery)}"</div>
+            </div>
+            
+            <div class="card-actions">
+                <button class="btn-primary" data-action="create">Создать новую</button>
+                <button class="btn-secondary" data-action="cancel">Отмена</button>
+            </div>
+        `;
+    }
+
+    // Bind events
+    card.querySelector('.card-dismiss').addEventListener('click', () => {
+        card.remove();
+        options.onDismiss?.();
+    });
+
+    return card;
+}
+
+/**
+ * Show error state on card (Nielsen: Error Recovery)
+ */
+function showCardError(card, message) {
+    // Remove existing error
+    const existingError = card.querySelector('.card-error');
+    if (existingError) existingError.remove();
+
+    card.classList.add('error');
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'card-error';
+    errorDiv.innerHTML = `
+        <span class="error-text">⚠️ ${escapeHtml(message)}</span>
+        <button class="retry-btn">Повторить</button>
+    `;
+
+    errorDiv.querySelector('.retry-btn').addEventListener('click', () => {
+        card.classList.remove('error');
+        errorDiv.remove();
+        // Re-trigger the add action
+        card.querySelector('[data-action="add"]')?.click();
+    });
+
+    card.appendChild(errorDiv);
+}
+
+/**
+ * Show Undo Toast (Nielsen: User Control)
+ */
+function showUndoToast(message, onUndo) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.undo-toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'undo-toast';
+    toast.innerHTML = `
+        <span class="toast-text">${escapeHtml(message)}</span>
+        <button class="undo-btn">Отменить</button>
+    `;
+
+    let timeout;
+
+    const dismiss = () => {
+        clearTimeout(timeout);
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    toast.querySelector('.undo-btn').addEventListener('click', async () => {
+        dismiss();
+        await onUndo?.();
+    });
+
+    document.body.appendChild(toast);
+
+    // Auto-dismiss after 5 seconds
+    timeout = setTimeout(dismiss, 5000);
+}
+
+/**
+ * Show First-Run Tooltip (Nielsen: Help/Onboarding)
+ */
+function showFirstRunTooltip() {
+    const STORAGE_KEY = 'solobuddy_first_run_dismissed';
+
+    // Check if already dismissed
+    if (localStorage.getItem(STORAGE_KEY)) return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'first-run-tooltip';
+    tooltip.innerHTML = `
+        <div class="tooltip-text">
+            💡 <strong>Tip:</strong> Говори как хочешь — Buddy найдёт нужное!
+            <br><br>
+            Попробуй: "та штука про orb" или "добавь идею X"
+        </div>
+        <button class="tooltip-dismiss">Понятно!</button>
+    `;
+
+    tooltip.querySelector('.tooltip-dismiss').addEventListener('click', () => {
+        localStorage.setItem(STORAGE_KEY, 'true');
+        tooltip.remove();
+    });
+
+    document.body.appendChild(tooltip);
+
+    // Auto-dismiss after 15 seconds
+    setTimeout(() => {
+        if (tooltip.parentNode) {
+            localStorage.setItem(STORAGE_KEY, 'true');
+            tooltip.remove();
+        }
+    }, 15000);
+}
+
+/**
+ * Utility: Escape HTML
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Utility: Priority emoji
+ */
+function getPriorityEmoji(priority) {
+    const emojis = { high: '🔥', medium: '⚡', low: '💭' };
+    return emojis[priority] || '📌';
+}
+
+/**
+ * Placeholder: Activity Card
+ */
+function renderActivityCard(data, options = {}) {
+    const card = document.createElement('div');
+    card.className = 'action-card activity';
+    card.innerHTML = `
+        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <div class="card-header">
+            <div class="card-title">📊 Activity Card (TODO Phase 2)</div>
+        </div>
+    `;
+
+    card.querySelector('.card-dismiss').addEventListener('click', () => card.remove());
+    return card;
+}
+
+/**
+ * Placeholder: Change Priority Card
+ */
+function renderChangePriorityCard(data, options = {}) {
+    const card = document.createElement('div');
+    card.className = 'action-card change-priority';
+    card.innerHTML = `
+        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <div class="card-header">
+            <div class="card-title">⚡ Change Priority Card (TODO Phase 3)</div>
+        </div>
+    `;
+
+    card.querySelector('.card-dismiss').addEventListener('click', () => card.remove());
+    return card;
+}
+
+// Export for use in app.js
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        renderActionCard,
+        showUndoToast,
+        showFirstRunTooltip,
+        showCardError
+    };
+}
