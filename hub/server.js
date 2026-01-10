@@ -10,7 +10,7 @@ const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
-const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes } = require('./github-api');
+const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
 const { sendToClaude } = require('./chat-api');
 
 const app = express();
@@ -539,8 +539,26 @@ app.get('/api/github/repos', async (req, res) => {
         const repos = await getUserRepos(token);
         const reposWithLocal = await matchLocalRepos(repos);
 
-        // Sort: local matches first, then by pushed_at
+        // Read projects.json to mark already connected repos
+        let connectedUrls = new Set();
+        try {
+            const projectsData = await fs.readFile(
+                path.join(__dirname, '..', 'data', 'projects.json'), 'utf-8'
+            );
+            const { projects = [] } = JSON.parse(projectsData);
+            projects.forEach(p => {
+                if (p.github) connectedUrls.add(normalizeGitUrl(p.github));
+            });
+        } catch (e) { /* no projects.json yet */ }
+
+        // Add alreadyConnected flag
+        reposWithLocal.forEach(repo => {
+            repo.alreadyConnected = connectedUrls.has(normalizeGitUrl(repo.clone_url));
+        });
+
+        // Sort: connected last, then local matches first, then by pushed_at
         reposWithLocal.sort((a, b) => {
+            if (a.alreadyConnected !== b.alreadyConnected) return a.alreadyConnected - b.alreadyConnected;
             if (a.hasLocal !== b.hasLocal) return b.hasLocal - a.hasLocal;
             return new Date(b.pushed_at) - new Date(a.pushed_at);
         });

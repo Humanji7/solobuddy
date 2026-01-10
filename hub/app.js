@@ -361,12 +361,13 @@ function renderReposList(repos) {
     }
 
     reposList.innerHTML = repos.map(repo => `
-        <div class="repo-item" data-id="${repo.id}" data-repo='${JSON.stringify(repo)}'>
-            <input type="checkbox" id="repo-${repo.id}">
+        <div class="repo-item ${repo.alreadyConnected ? 'connected' : ''}" data-id="${repo.id}" data-repo='${JSON.stringify(repo)}'>
+            <input type="checkbox" id="repo-${repo.id}" ${repo.alreadyConnected ? 'disabled checked' : ''}>
             <div class="repo-info">
                 <div class="repo-name">
                     ${repo.name}
                     ${repo.private ? '<span class="private-badge">Private</span>' : ''}
+                    ${repo.alreadyConnected ? '<span class="connected-badge">✓ Connected</span>' : ''}
                 </div>
                 ${repo.description ? `<div class="repo-description">${repo.description}</div>` : ''}
                 <div class="repo-meta">
@@ -377,8 +378,8 @@ function renderReposList(repos) {
         </div>
     `).join('');
 
-    // Add click handlers
-    reposList.querySelectorAll('.repo-item').forEach(item => {
+    // Add click handlers (skip connected items)
+    reposList.querySelectorAll('.repo-item:not(.connected)').forEach(item => {
         item.addEventListener('click', (e) => {
             if (e.target.type !== 'checkbox') {
                 const checkbox = item.querySelector('input[type="checkbox"]');

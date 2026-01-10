@@ -355,5 +355,6 @@ module.exports = {
     scanLocalProjects,
     addLocalProjectsToConfig,
     updateProjectRemotes,
-    getGitRemoteUrl
+    getGitRemoteUrl,
+    normalizeGitUrl
 };
