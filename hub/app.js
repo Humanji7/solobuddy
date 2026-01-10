@@ -22,6 +22,16 @@ const buddyLeft = document.getElementById('buddy-message-left');
 const buddyRight = document.getElementById('buddy-message-right');
 
 // ============================================
+// Buddy Queue System
+// ============================================
+
+let insightsQueue = [];       // All insights from server
+let leftIndex = 0;            // Current left block index
+let rightIndex = 1;           // Current right block index  
+let autoRotateInterval = null;
+const AUTO_ROTATE_MS = 45000; // 45 seconds
+
+// ============================================
 // API Functions
 // ============================================
 
@@ -77,10 +87,13 @@ async function fetchBuddyMessage() {
     try {
         const response = await fetch('/api/buddy-message');
         if (!response.ok) throw new Error('Failed to fetch buddy message');
-        return await response.json();
+        const data = await response.json();
+        // Store queue for rotation
+        insightsQueue = data.insights || [];
+        return data;
     } catch (error) {
         console.error('Error fetching buddy message:', error);
-        return { message: 'Привет! Проекты дышат ровно.', type: 'calm' };
+        return { insights: [], projectsCount: 0 };
     }
 }
 
@@ -165,31 +178,13 @@ function getStatusEmoji(status) {
 }
 
 function renderBuddyMessage(data) {
-    // Render left message
-    if (data.left && buddyLeft) {
-        const textEl = buddyLeft.querySelector('.message-text');
-        textEl.textContent = data.left.message;
+    // Reset indices
+    leftIndex = 0;
+    rightIndex = 1;
 
-        // Apply random color
-        if (data.left.colorScheme) {
-            buddyLeft.style.setProperty('--buddy-accent', data.left.colorScheme.accent);
-        }
-
-        buddyLeft.classList.remove('loading', 'dismissed');
-    }
-
-    // Render right message
-    if (data.right && buddyRight) {
-        const textEl = buddyRight.querySelector('.message-text');
-        textEl.textContent = data.right.message;
-
-        // Apply random color
-        if (data.right.colorScheme) {
-            buddyRight.style.setProperty('--buddy-accent', data.right.colorScheme.accent);
-        }
-
-        buddyRight.classList.remove('loading', 'dismissed');
-    }
+    // Render initial messages
+    renderBuddyBlock('left', insightsQueue[leftIndex]);
+    renderBuddyBlock('right', insightsQueue[rightIndex]);
 
     // Update status text with project count
     if (data.projectsCount !== undefined) {
@@ -197,6 +192,92 @@ function renderBuddyMessage(data) {
         if (statusText) {
             statusText.textContent = `Watching ${data.projectsCount} projects`;
         }
+    }
+
+    // Start auto-rotation
+    startAutoRotation();
+}
+
+/**
+ * Render a single buddy block with optional animation
+ */
+function renderBuddyBlock(side, insight) {
+    const block = side === 'left' ? buddyLeft : buddyRight;
+    if (!block || !insight) return;
+
+    const textEl = block.querySelector('.message-text');
+    if (textEl) {
+        textEl.textContent = insight.message;
+    }
+
+    // Apply color
+    if (insight.colorScheme) {
+        block.style.setProperty('--buddy-accent', insight.colorScheme.accent);
+    }
+
+    // Reset classes and animate
+    block.classList.remove('loading', 'dismissed', 'queue-empty');
+
+    // Trigger appear animation
+    block.classList.remove('appearing');
+    void block.offsetWidth; // Force reflow
+    block.classList.add('appearing');
+}
+
+/**
+ * Dismiss and show next insight for a side
+ */
+function dismissAndShowNext(side) {
+    const block = side === 'left' ? buddyLeft : buddyRight;
+    if (!block) return;
+
+    // Calculate next index (skip by 2 to avoid overlap)
+    const currentIndex = side === 'left' ? leftIndex : rightIndex;
+    const nextIndex = currentIndex + 2;
+
+    if (nextIndex < insightsQueue.length) {
+        // Update index
+        if (side === 'left') {
+            leftIndex = nextIndex;
+        } else {
+            rightIndex = nextIndex;
+        }
+        // Show next insight with animation
+        renderBuddyBlock(side, insightsQueue[nextIndex]);
+    } else {
+        // Queue exhausted — hide permanently
+        block.classList.add('dismissed', 'queue-empty');
+    }
+}
+
+/**
+ * Start auto-rotation carousel
+ */
+function startAutoRotation() {
+    // Clear existing interval
+    if (autoRotateInterval) {
+        clearInterval(autoRotateInterval);
+    }
+
+    autoRotateInterval = setInterval(() => {
+        // Rotate left if not dismissed permanently
+        if (buddyLeft && !buddyLeft.classList.contains('queue-empty')) {
+            dismissAndShowNext('left');
+        }
+        // Rotate right if not dismissed permanently
+        if (buddyRight && !buddyRight.classList.contains('queue-empty')) {
+            dismissAndShowNext('right');
+        }
+    }, AUTO_ROTATE_MS);
+}
+
+/**
+ * Stop auto-rotation (e.g., on page unload)
+ */
+function stopAutoRotation() {
+    if (autoRotateInterval) {
+        clearInterval(autoRotateInterval);
+        autoRotateInterval = null;
     }
 }
 
@@ -206,7 +287,7 @@ if (buddyLeft) {
     if (dismissBtn) {
         dismissBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            buddyLeft.classList.add('dismissed');
+            dismissAndShowNext('left');
         });
     }
 }
@@ -216,7 +297,7 @@ if (buddyRight) {
     if (dismissBtn) {
         dismissBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            buddyRight.classList.add('dismissed');
+            dismissAndShowNext('right');
         });
     }
 }
