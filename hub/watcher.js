@@ -112,13 +112,13 @@ function getActivityStats(projectName, scanResult) {
 
 /**
  * Generate an insight message based on stats
- * Returns null if nothing interesting to say
+ * ALWAYS returns an insight for any project with activity
  */
 function generateInsight(stats) {
-    const { name, commitsToday, commitsYesterday, commitsThisWeek, daysSilent, isActive } = stats;
+    const { name, commitsToday, commitsYesterday, commitsThisWeek, daysSilent, lastCommitMessage } = stats;
 
-    // Priority 1: High activity today — direct
-    if (commitsToday >= 5) {
+    // Priority 1: Hot today (3+ commits) — direct
+    if (commitsToday >= 3) {
         const templates = [
             `${name}: ${commitsToday} за сегодня. Норм.`,
             `${commitsToday} комов в ${name}. Жги дальше.`,
@@ -127,12 +127,26 @@ function generateInsight(stats) {
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
             type: 'active',
-            priority: 3
+            priority: 5
         };
     }
 
-    // Priority 2: High activity yesterday — questioning
-    if (commitsYesterday >= 5) {
+    // Priority 2: Some activity today (1-2 commits)
+    if (commitsToday >= 1) {
+        const templates = [
+            `${name}: ${commitsToday} ком сегодня.`,
+            `${name} — работаешь.`,
+            `${name} шевелится.`
+        ];
+        return {
+            message: templates[Math.floor(Math.random() * templates.length)],
+            type: 'active',
+            priority: 4
+        };
+    }
+
+    // Priority 3: Yesterday was active (3+ commits)
+    if (commitsYesterday >= 3) {
         const templates = [
             `Вчера ${name} горел (${commitsYesterday}). А сегодня?`,
             `${commitsYesterday} комов было вчера в ${name}. Ну и чо?`,
@@ -141,11 +155,24 @@ function generateInsight(stats) {
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
             type: 'momentum',
+            priority: 3
+        };
+    }
+
+    // Priority 4: Yesterday had some activity
+    if (commitsYesterday >= 1) {
+        const templates = [
+            `${name}: вчера было ${commitsYesterday}. Продолжишь?`,
+            `Вчера ${name} трогал. Сегодня?`
+        ];
+        return {
+            message: templates[Math.floor(Math.random() * templates.length)],
+            type: 'momentum',
             priority: 2
         };
     }
 
-    // Priority 3: Long silence (3+ days) — provocative
+    // Priority 5: Long silence (3+ days) — provocative
     if (daysSilent !== null && daysSilent >= 3) {
         const templates = [
             `${name} молчит ${daysSilent} ${getDaysWord(daysSilent)}. Там живой кто?`,
@@ -159,22 +186,35 @@ function generateInsight(stats) {
         };
     }
 
-    // Priority 4: Return after pause — ironic
-    if (daysSilent === 0 && commitsThisWeek > 0 && commitsThisWeek <= 3) {
+    // Priority 6: Any weekly activity — fallback
+    if (commitsThisWeek > 0) {
         const templates = [
-            `О, ${name} ожил.`,
-            `${name} шевельнулся. Наконец-то.`,
-            `Ага, ${name}. Вернулся.`
+            `${name}: ${commitsThisWeek} за неделю.`,
+            `${name} — ${commitsThisWeek} ком за неделю.`,
+            `${name} потихоньку. ${commitsThisWeek} шт.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
-            type: 'return',
-            priority: 1
+            type: 'weekly',
+            priority: 0
         };
     }
 
-    // No interesting insight
-    return null;
+    // Still nothing — project exists but no commits in 7 days
+    if (daysSilent !== null) {
+        return {
+            message: `${name}: тишина ${daysSilent} ${getDaysWord(daysSilent)}.`,
+            type: 'silent',
+            priority: 0
+        };
+    }
+
+    // Absolutely nothing known
+    return {
+        message: `${name} — без данных.`,
+        type: 'unknown',
+        priority: 0
+    };
 }
 
 /**
@@ -265,7 +305,8 @@ async function scanAllProjects() {
 }
 
 /**
- * Get the buddy messages to display (two messages: left and right)
+ * Get the buddy messages to display
+ * Returns ALL insights as an array for frontend queue management
  */
 async function getBuddyMessage() {
     // Auto-update github fields for projects with new remotes
@@ -279,31 +320,28 @@ async function getBuddyMessage() {
     const projectsCount = projects.length;
     const insights = await scanAllProjects();
 
-    // Prepare left message (top priority or calm)
-    const leftInsight = insights[0] || null;
-    const leftMessage = leftInsight
-        ? leftInsight.message
-        : getRandomCalmMessage();
-    const leftType = leftInsight ? leftInsight.type : 'calm';
+    // Build full insights array with color schemes
+    // If no insights, generate calm messages
+    let allInsights = insights.map(insight => ({
+        message: insight.message,
+        type: insight.type,
+        project: insight.project,
+        colorScheme: pickRandomColorScheme()
+    }));
 
-    // Prepare right message (second priority or different calm)
-    const rightInsight = insights[1] || null;
-    const rightMessage = rightInsight
-        ? rightInsight.message
-        : getRandomCalmMessage();
-    const rightType = rightInsight ? rightInsight.type : 'calm';
+    // Ensure at least 2 messages (for dual display)
+    while (allInsights.length < 2) {
+        allInsights.push({
+            message: getRandomCalmMessage(),
+            type: 'calm',
+            project: null,
+            colorScheme: pickRandomColorScheme()
+        });
+    }
 
     return {
-        left: {
-            message: leftMessage,
-            type: leftType,
-            colorScheme: pickRandomColorScheme()
-        },
-        right: {
-            message: rightMessage,
-            type: rightType,
-            colorScheme: pickRandomColorScheme()
-        },
+        insights: allInsights,
+        colorSchemes: COLOR_SCHEMES,
         timestamp: new Date().toISOString(),
         projectsCount
     };
