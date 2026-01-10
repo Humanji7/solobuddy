@@ -43,11 +43,15 @@ function buildSystemPrompt(context) {
     // ============================================
     // Live Context: Git Activity
     // ============================================
-    if (buddyMessage) {
-        prompt += `## Right Now
-🔥 **Buddy observation**: ${buddyMessage.message}
-
-`;
+    if (buddyMessage && (buddyMessage.left || buddyMessage.right)) {
+        prompt += `## Right Now\n`;
+        if (buddyMessage.left) {
+            prompt += `🔥 **Observation 1**: ${buddyMessage.left.message}\n`;
+        }
+        if (buddyMessage.right) {
+            prompt += `🔥 **Observation 2**: ${buddyMessage.right.message}\n`;
+        }
+        prompt += `\n`;
     }
 
     if (gitActivity && gitActivity.length > 0) {

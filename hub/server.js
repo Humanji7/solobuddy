@@ -2,7 +2,7 @@
    SoloBuddy Hub — Express Server
    ============================================ */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const express = require('express');
 const session = require('express-session');
@@ -347,9 +347,18 @@ app.get('/api/buddy-message', async (req, res) => {
     } catch (error) {
         console.error('Error getting buddy message:', error);
         res.json({
-            message: 'Привет! Проекты дышат ровно.',
-            type: 'calm',
-            timestamp: new Date().toISOString()
+            left: {
+                message: 'Привет! Проекты дышат ровно.',
+                type: 'calm',
+                colorScheme: { name: 'sage', accent: '#2D6A4F' }
+            },
+            right: {
+                message: 'Сканирование завершится скоро.',
+                type: 'calm',
+                colorScheme: { name: 'ocean', accent: '#0077B6' }
+            },
+            timestamp: new Date().toISOString(),
+            projectsCount: 0
         });
     }
 });

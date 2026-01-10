@@ -16,7 +16,10 @@ const modal = document.getElementById('add-idea-modal');
 const modalClose = document.getElementById('modal-close');
 const ideaForm = document.getElementById('idea-form');
 const sessionLogBadge = document.querySelector('.session-log .badge');
-const buddyMessageEl = document.getElementById('buddy-message');
+
+// Dual buddy message elements
+const buddyLeft = document.getElementById('buddy-message-left');
+const buddyRight = document.getElementById('buddy-message-right');
 
 // ============================================
 // API Functions
@@ -162,14 +165,30 @@ function getStatusEmoji(status) {
 }
 
 function renderBuddyMessage(data) {
-    const textEl = buddyMessageEl.querySelector('.message-text');
-    const timeEl = buddyMessageEl.querySelector('.message-time');
+    // Render left message
+    if (data.left && buddyLeft) {
+        const textEl = buddyLeft.querySelector('.message-text');
+        textEl.textContent = data.left.message;
 
-    textEl.textContent = data.message;
+        // Apply random color
+        if (data.left.colorScheme) {
+            buddyLeft.style.setProperty('--buddy-accent', data.left.colorScheme.accent);
+        }
 
-    if (data.timestamp) {
-        const time = new Date(data.timestamp);
-        timeEl.textContent = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        buddyLeft.classList.remove('loading', 'dismissed');
+    }
+
+    // Render right message
+    if (data.right && buddyRight) {
+        const textEl = buddyRight.querySelector('.message-text');
+        textEl.textContent = data.right.message;
+
+        // Apply random color
+        if (data.right.colorScheme) {
+            buddyRight.style.setProperty('--buddy-accent', data.right.colorScheme.accent);
+        }
+
+        buddyRight.classList.remove('loading', 'dismissed');
     }
 
     // Update status text with project count
@@ -179,8 +198,27 @@ function renderBuddyMessage(data) {
             statusText.textContent = `Watching ${data.projectsCount} projects`;
         }
     }
+}
 
-    buddyMessageEl.classList.remove('loading');
+// Dismiss handlers for buddy messages
+if (buddyLeft) {
+    const dismissBtn = buddyLeft.querySelector('.buddy-dismiss');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            buddyLeft.classList.add('dismissed');
+        });
+    }
+}
+
+if (buddyRight) {
+    const dismissBtn = buddyRight.querySelector('.buddy-dismiss');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            buddyRight.classList.add('dismissed');
+        });
+    }
 }
 
 // ============================================
@@ -192,7 +230,8 @@ async function loadAllData() {
     sessionLogContent.innerHTML = '<div class="loading">Loading...</div>';
     backlogContent.innerHTML = '<div class="loading">Loading...</div>';
     draftsContent.innerHTML = '<div class="loading">Loading...</div>';
-    buddyMessageEl.classList.add('loading');
+    if (buddyLeft) buddyLeft.classList.add('loading');
+    if (buddyRight) buddyRight.classList.add('loading');
 
     // Fetch all data in parallel
     const [sessionLog, backlog, drafts, buddyMessage] = await Promise.all([
@@ -216,7 +255,8 @@ async function loadAllData() {
         sessionLog: sessionLogData.length,
         backlog: backlogData.length,
         drafts: draftsData.length,
-        buddyMessage: buddyMessage.message
+        buddyLeft: buddyMessage.left?.message,
+        buddyRight: buddyMessage.right?.message
     });
 }
 

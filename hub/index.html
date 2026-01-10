@@ -27,14 +27,25 @@
             </div>
         </header>
 
-        <!-- Buddy Message -->
-        <div class="buddy-message" id="buddy-message">
-            <div class="buddy-avatar">🧬</div>
-            <div class="buddy-content">
-                <p class="message-text">Сканирую проекты...</p>
-                <span class="message-time"></span>
+        <!-- Buddy Messages Container -->
+        <div class="buddy-messages-container" id="buddy-messages-container">
+            <div class="buddy-message buddy-left" id="buddy-message-left">
+                <div class="buddy-avatar">🧬</div>
+                <div class="buddy-content">
+                    <p class="message-text">Сканирую...</p>
+                </div>
+                <button class="buddy-dismiss" aria-label="Dismiss">×</button>
+            </div>
+
+            <div class="buddy-message buddy-right" id="buddy-message-right">
+                <div class="buddy-content">
+                    <p class="message-text">Сканирую...</p>
+                </div>
+                <div class="buddy-avatar">🧬</div>
+                <button class="buddy-dismiss" aria-label="Dismiss">×</button>
             </div>
         </div>
+
 
         <!-- Chat Interface -->
         <section class="chat-container">

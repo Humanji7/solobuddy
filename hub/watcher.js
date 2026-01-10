@@ -117,37 +117,57 @@ function getActivityStats(projectName, scanResult) {
 function generateInsight(stats) {
     const { name, commitsToday, commitsYesterday, commitsThisWeek, daysSilent, isActive } = stats;
 
-    // Priority 1: High activity today
+    // Priority 1: High activity today — direct
     if (commitsToday >= 5) {
+        const templates = [
+            `${name}: ${commitsToday} за сегодня. Норм.`,
+            `${commitsToday} комов в ${name}. Жги дальше.`,
+            `${name} кипит. ${commitsToday} шт.`
+        ];
         return {
-            message: `Активный день в ${name} — ${commitsToday} коммитов уже сегодня!`,
+            message: templates[Math.floor(Math.random() * templates.length)],
             type: 'active',
             priority: 3
         };
     }
 
-    // Priority 2: High activity yesterday
+    // Priority 2: High activity yesterday — questioning
     if (commitsYesterday >= 5) {
+        const templates = [
+            `Вчера ${name} горел (${commitsYesterday}). А сегодня?`,
+            `${commitsYesterday} комов было вчера в ${name}. Ну и чо?`,
+            `${name}: вчера ${commitsYesterday}. Сегодня тишина пока.`
+        ];
         return {
-            message: `${name} кипел вчера — ${commitsYesterday} коммитов. Продолжишь?`,
+            message: templates[Math.floor(Math.random() * templates.length)],
             type: 'momentum',
             priority: 2
         };
     }
 
-    // Priority 3: Long silence (3+ days)
+    // Priority 3: Long silence (3+ days) — provocative
     if (daysSilent !== null && daysSilent >= 3) {
+        const templates = [
+            `${name} молчит ${daysSilent} ${getDaysWord(daysSilent)}. Там живой кто?`,
+            `${daysSilent} дн. без комитов в ${name}. Забил?`,
+            `${name} в коме уже ${daysSilent} ${getDaysWord(daysSilent)}.`
+        ];
         return {
-            message: `${name} притих уже ${daysSilent} ${getDaysWord(daysSilent)}.`,
+            message: templates[Math.floor(Math.random() * templates.length)],
             type: 'silent',
             priority: 1
         };
     }
 
-    // Priority 4: Return after pause (1-2 days silent, then active)
+    // Priority 4: Return after pause — ironic
     if (daysSilent === 0 && commitsThisWeek > 0 && commitsThisWeek <= 3) {
+        const templates = [
+            `О, ${name} ожил.`,
+            `${name} шевельнулся. Наконец-то.`,
+            `Ага, ${name}. Вернулся.`
+        ];
         return {
-            message: `О, ты вернулся к ${name}!`,
+            message: templates[Math.floor(Math.random() * templates.length)],
             type: 'return',
             priority: 1
         };
@@ -168,6 +188,36 @@ function getDaysWord(n) {
     if (lastOne === 1) return 'день';
     if (lastOne >= 2 && lastOne <= 4) return 'дня';
     return 'дней';
+}
+
+// ============================================
+// Color Schemes for random selection
+// ============================================
+
+const COLOR_SCHEMES = [
+    { name: 'ember', accent: '#E85D04' },
+    { name: 'ocean', accent: '#0077B6' },
+    { name: 'sage', accent: '#2D6A4F' },
+    { name: 'plum', accent: '#7B2CBF' },
+    { name: 'rust', accent: '#9B2226' },
+    { name: 'steel', accent: '#495057' }
+];
+
+function pickRandomColorScheme() {
+    return COLOR_SCHEMES[Math.floor(Math.random() * COLOR_SCHEMES.length)];
+}
+
+// Calm messages when nothing is happening
+const CALM_MESSAGES = [
+    'Тишина. Работаешь или тупишь?',
+    'Всё ровно. Даже подозрительно.',
+    'Проекты молчат. Ты как?',
+    'Ничего нового. Это хорошо или плохо?',
+    'Спокойствие. Затишье перед бурей?'
+];
+
+function getRandomCalmMessage() {
+    return CALM_MESSAGES[Math.floor(Math.random() * CALM_MESSAGES.length)];
 }
 
 // ============================================
@@ -215,7 +265,7 @@ async function scanAllProjects() {
 }
 
 /**
- * Get the buddy message to display
+ * Get the buddy messages to display (two messages: left and right)
  */
 async function getBuddyMessage() {
     // Auto-update github fields for projects with new remotes
@@ -229,38 +279,31 @@ async function getBuddyMessage() {
     const projectsCount = projects.length;
     const insights = await scanAllProjects();
 
-    if (insights.length === 0) {
-        return {
-            message: 'Всё тихо. Проекты дышат ровно.',
-            type: 'calm',
-            timestamp: new Date().toISOString(),
-            projectsCount
-        };
-    }
+    // Prepare left message (top priority or calm)
+    const leftInsight = insights[0] || null;
+    const leftMessage = leftInsight
+        ? leftInsight.message
+        : getRandomCalmMessage();
+    const leftType = leftInsight ? leftInsight.type : 'calm';
 
-    // Take the top priority insight
-    const topInsight = insights[0];
-
-    // If there are multiple insights, combine them
-    if (insights.length > 1) {
-        const activeCount = insights.filter(i => i.type === 'active' || i.type === 'momentum').length;
-        const silentCount = insights.filter(i => i.type === 'silent').length;
-
-        if (activeCount > 0 && silentCount > 0) {
-            const active = insights.find(i => i.type === 'active' || i.type === 'momentum');
-            const silent = insights.find(i => i.type === 'silent');
-            return {
-                message: `${active.message} ${silent.project} тихо уже ${silent.project === 'VOP' ? 'немного' : 'давно'}.`,
-                type: 'mixed',
-                timestamp: new Date().toISOString(),
-                projectsCount
-            };
-        }
-    }
+    // Prepare right message (second priority or different calm)
+    const rightInsight = insights[1] || null;
+    const rightMessage = rightInsight
+        ? rightInsight.message
+        : getRandomCalmMessage();
+    const rightType = rightInsight ? rightInsight.type : 'calm';
 
     return {
-        message: topInsight.message,
-        type: topInsight.type,
+        left: {
+            message: leftMessage,
+            type: leftType,
+            colorScheme: pickRandomColorScheme()
+        },
+        right: {
+            message: rightMessage,
+            type: rightType,
+            colorScheme: pickRandomColorScheme()
+        },
         timestamp: new Date().toISOString(),
         projectsCount
     };

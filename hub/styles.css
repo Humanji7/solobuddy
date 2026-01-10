@@ -119,20 +119,43 @@ body {
 }
 
 /* ============================================
-   Buddy Message - Living presence
+   Buddy Messages — Dual layout with dismiss
    ============================================ */
 
+.buddy-messages-container {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
 .buddy-message {
+    flex: 0 0 calc(50% - var(--spacing-sm));
+    position: relative;
     display: flex;
     align-items: flex-start;
-    gap: var(--spacing-md);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
     background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-surface) 100%);
     border: 1px solid var(--border-color);
-    border-left: 3px solid var(--accent-soft);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     animation: fadeSlideIn 0.5s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+
+.buddy-message.buddy-left {
+    border-left: 3px solid var(--buddy-accent, var(--accent-soft));
+}
+
+.buddy-message.buddy-right {
+    flex-direction: row-reverse;
+    text-align: right;
+    border-right: 3px solid var(--buddy-accent, var(--accent-soft));
+    border-left: 1px solid var(--border-color);
+}
+
+.buddy-message.buddy-right .buddy-content {
+    text-align: right;
 }
 
 @keyframes fadeSlideIn {
@@ -148,25 +171,57 @@ body {
 }
 
 .buddy-avatar {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     animation: breathe var(--breath-duration) ease-in-out infinite;
     flex-shrink: 0;
 }
 
 .buddy-content {
     flex: 1;
+    min-width: 0;
 }
 
 .buddy-content .message-text {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--text-primary);
-    line-height: 1.6;
-    margin: 0 0 var(--spacing-xs) 0;
+    line-height: 1.5;
+    margin: 0;
 }
 
-.buddy-content .message-time {
-    font-size: 0.75rem;
+/* Dismiss button */
+.buddy-dismiss {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
     color: var(--text-muted);
+    font-size: 1.125rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.buddy-message:hover .buddy-dismiss {
+    opacity: 1;
+}
+
+.buddy-dismiss:hover {
+    color: var(--text-primary);
+}
+
+/* Dismissed state */
+.buddy-message.dismissed {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    pointer-events: none;
 }
 
 .buddy-message.loading {
@@ -175,6 +230,29 @@ body {
 
 .buddy-message.loading .message-text {
     color: var(--text-muted);
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 768px) {
+    .buddy-messages-container {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .buddy-message {
+        flex: 1 1 auto;
+    }
+
+    .buddy-message.buddy-right {
+        flex-direction: row;
+        text-align: left;
+        border-right: 1px solid var(--border-color);
+        border-left: 3px solid var(--buddy-accent, var(--accent-soft));
+    }
+
+    .buddy-message.buddy-right .buddy-content {
+        text-align: left;
+    }
 }
 
 /* ============================================
