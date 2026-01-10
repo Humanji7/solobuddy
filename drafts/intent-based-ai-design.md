@@ -21,6 +21,43 @@
 
 ---
 
+## ⚠️ Critical UX Issues (Nielsen Review, 2026-01-10)
+
+> **Review Score**: 7.2/10 — Proceed with Iteration
+> **Full Review**: [nielsen-ux-review-intent-based-ai.md](./nielsen-ux-review-intent-based-ai.md)
+
+### 🔴 Must Fix Before Phase 1
+
+| Issue | Impact | Solution |
+|-------|--------|----------|
+| **No Error Recovery** | Users stuck when Buddy misunderstands | Undo toast after actions + retry button + [👍👎] feedback |
+| **No AI Transparency** | Users don't understand WHY Buddy chose X | Confidence badges `[🟢 95%]` + expandable reasoning |
+| **No Onboarding** | Users won't discover fuzzy matching | First-run tooltip + `/help` command |
+
+### 🟡 Phase 1 Additions
+
+```diff
+Phase 1: Foundation (2-3 дня) — MVP
++ - [ ] Undo toast after every destructive action
++ - [ ] Error state for Action Cards with [Retry]
++ - [ ] Confidence badge (🟢🟡🔴) on Action Cards
++ - [ ] First-run tooltip: "💡 Говори как хочешь — Buddy найдёт"
++ - [ ] Duplicate detection before adding to backlog
++ - [ ] action-cards.css design system tokens
+```
+
+### 🏆 Review Highlights
+
+**Best scores (9/10)**:
+- Match between system and real world — язык Buddy human-centric
+- Recognition rather than recall — fuzzy matching снижает cognitive load
+
+**Lowest scores (4-5/10)**:
+- Error recovery — нет flow для "Buddy ошибся"
+- AI Transparency — непонятно ПОЧЕМУ Buddy так решил
+
+---
+
 ## 🎯 Три желания Нильсена → SoloBuddy
 
 | Желание Нильсена | Текущее состояние SoloBuddy | Проблема | Решение (Intent-Based) |
