@@ -172,6 +172,14 @@ function renderBuddyMessage(data) {
         timeEl.textContent = time.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
 
+    // Update status text with project count
+    if (data.projectsCount !== undefined) {
+        const statusText = document.getElementById('status-text');
+        if (statusText) {
+            statusText.textContent = `Watching ${data.projectsCount} projects`;
+        }
+    }
+
     buddyMessageEl.classList.remove('loading');
 }
 

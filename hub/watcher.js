@@ -225,13 +225,16 @@ async function getBuddyMessage() {
         console.error('Error updating project remotes:', e);
     }
 
+    const projects = await loadProjects();
+    const projectsCount = projects.length;
     const insights = await scanAllProjects();
 
     if (insights.length === 0) {
         return {
             message: 'Всё тихо. Проекты дышат ровно.',
             type: 'calm',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            projectsCount
         };
     }
 
@@ -249,7 +252,8 @@ async function getBuddyMessage() {
             return {
                 message: `${active.message} ${silent.project} тихо уже ${silent.project === 'VOP' ? 'немного' : 'давно'}.`,
                 type: 'mixed',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                projectsCount
             };
         }
     }
@@ -257,7 +261,8 @@ async function getBuddyMessage() {
     return {
         message: topInsight.message,
         type: topInsight.type,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        projectsCount
     };
 }
 
