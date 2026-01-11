@@ -1,6 +1,6 @@
 # HANDOFF: Project Voice — Голос Изнутри Проекта
 
-> **Статус:** ✅ Phase 2.2 DONE (README LLM Extraction)
+> **Статус:** ✅ Phase 2.2 DONE + Critical Bug Fix
 > **Дата:** 2026-01-11
 > **Следующая сессия:** Phase 2.3 — Styling polish, frontend extraction indicator
 
@@ -273,6 +273,43 @@ curl -X POST http://localhost:3000/api/project-soul/solobuddy/extract
 4. Подключен `personal-site` через GitHub в Playwright браузере
 
 **Result:** Теперь в Voice dropdown отображаются все 9 проектов, включая `personal-site`
+
+### ❌ Problem: All Projects Responding as Sphere (2026-01-11)
+
+**Symptom:**
+Спросил `optimi-mac` "Кто ты?" — ответил "Я — живая интерактивная сфера...". Путаница личностей!
+
+**Root Cause:**
+В `prompt-builder.js` строки 451-453 использовали `includes()` для матчинга:
+
+```javascript
+// ❌ WRONG: .includes() матчил первый ключ для ВСЕХ проектов
+const hint = Object.entries(personalityHints).find(([key]) =>
+    folderName.toLowerCase().includes(key)
+);
+```
+
+`Object.entries()` возвращает ключи в порядке вставки, и первый ключ `'sphere'` матчился для всех проектов без README (потому что `includes()` находил его первым).
+
+**✅ Solution:**
+1. Заменил `includes()` на точный `===` матч
+2. Добавил все известные проекты в `personalityHints`
+
+```javascript
+// ✅ FIXED: Exact match only
+const hint = Object.entries(personalityHints).find(([key]) =>
+    folderName.toLowerCase() === key.toLowerCase()
+);
+
+const personalityHints = {
+    'sphere-777': 'I am alive. I breathe. I feel. I sense your touch.',
+    'optimi-mac': 'I optimize Mac for peak performance. I clean, I tune, I make fast.',
+    'personal-site': 'I am a journey through 7 rooms to an artifact.',
+    // ... all projects
+};
+```
+
+**Result:** Теперь `optimi-mac` отвечает "Я — система оптимизации для Mac", а не как сфера.
 
 ---
 

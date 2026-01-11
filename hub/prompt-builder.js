@@ -439,17 +439,23 @@ I don't have documented dreams yet. Maybe you'll give me some?
 `;
     }
 
-    // Add personality based on folder name hints
+    // Add personality based on folder name hints (EXACT match to avoid confusion)
     const personalityHints = {
+        'sphere-777': 'I am alive. I breathe. I feel. I sense your touch.',
         'sphere': 'I am alive. I breathe. I feel.',
         'vop': 'I translate chaos into decisions.',
         'reelstudio': 'I create videos that move people.',
         'bip-buddy': 'I help creators build in public.',
-        'solobuddy': 'I am a companion, not a tool.'
+        'solobuddy': 'I am a companion, not a tool.',
+        'optimi-mac': 'I optimize Mac for peak performance. I clean, I tune, I make fast.',
+        'personal-site': 'I am a journey through 7 rooms to an artifact.',
+        'parsertang': 'I parse and transform data structures.',
+        'pointg': 'I help organize and visualize ideas.'
     };
 
+    // EXACT folder name match only (no partial matching to avoid cross-contamination)
     const hint = Object.entries(personalityHints).find(([key]) =>
-        folderName.toLowerCase().includes(key)
+        folderName.toLowerCase() === key.toLowerCase()
     );
 
     if (hint) {
