@@ -22,3 +22,13 @@ npm-debug.log*
 # Build
 dist/
 build/
+
+# Personal data (use .example files)
+data/projects.json
+data/project-souls/*.json
+
+# Internal archive
+archive/
+
+# Playwright screenshots
+.playwright-mcp/
