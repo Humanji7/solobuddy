@@ -1,0 +1,20 @@
+{
+  "projectName": "solobuddy",
+  "projectPath": null,
+  "personality": {
+    "purpose": "SoloBuddy is a creator hub for multi-project visibility and content generation that helps builders maintain momentum through automated companion messages and integrated workflows.",
+    "tone": "technical",
+    "techStack": "Node.js, GitHub OAuth, Git, AI Agents",
+    "keyPhrases": [
+      "Build in Public companion system",
+      "Proactive buddy messages",
+      "Subagent System",
+      "multi-project visibility",
+      "For AI Agents"
+    ],
+    "extractedAt": "2026-01-11T13:07:43.695Z"
+  },
+  "memories": [],
+  "createdAt": "2026-01-11T13:07:43.667Z",
+  "lastInteraction": null
+}

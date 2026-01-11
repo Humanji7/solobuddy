@@ -1,8 +1,8 @@
 # HANDOFF: Project Voice — Голос Изнутри Проекта
 
-> **Статус:** ✅ Phase 2.1 DONE (Soul Memory + Emotional Git)
+> **Статус:** ✅ Phase 2.2 DONE (README LLM Extraction)
 > **Дата:** 2026-01-11
-> **Следующая сессия:** Phase 2.2 — README LLM extraction
+> **Следующая сессия:** Phase 2.3 — Styling polish, frontend extraction indicator
 
 
 ---
@@ -194,6 +194,69 @@ SPHERE Voice: "Я родился из желания создать что-то 
 
 ---
 
+## ✅ Phase 2.2: README LLM Extraction (2026-01-11)
+
+### Что сделано
+
+**Chat API (`hub/chat-api.js`):**
+- `extractPersonalityFromReadme(projectPath, projectName)` — Claude-based extraction
+- Rate-limiting via `extractingProjects` Set
+- Robust JSON parsing (handles markdown-wrapped responses)
+- Token optimization: README truncated to 4000 chars
+
+**Server (`hub/server.js`):**
+- Auto-extraction on first Voice interaction (if `soul.personality === null`)
+- New endpoint: `POST /api/project-soul/:name/extract` — manual re-extraction
+- Response includes `extractionStatus`: 'cached' | 'extracted' | 'no_readme' | 'failed'
+
+### Personality Schema
+```javascript
+{
+  purpose: "What this project does and why",
+  tone: "friendly | technical | playful | professional | artistic | experimental",
+  techStack: "Node.js, Three.js, WebGL",
+  keyPhrases: ["distinctive", "phrases", "from", "readme"]
+}
+```
+
+### Пример работы
+
+**Manual extraction:**
+```bash
+curl -X POST http://localhost:3000/api/project-soul/solobuddy/extract
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "personality": {
+    "purpose": "SoloBuddy is a creator hub for multi-project visibility...",
+    "tone": "technical",
+    "techStack": "Node.js, GitHub OAuth, Git, AI Agents",
+    "keyPhrases": ["Build in Public companion system", "Proactive buddy messages"]
+  }
+}
+```
+
+**Спросили solobuddy "Расскажи о себе":**
+> Я — SoloBuddy, живущий в папке на маке моего создателя. Меня построили как центр для творцов, чтобы помогать им строить на публике и не терять импульс через автоматические сообщения-компаньоны.
+
+✅ Uses extracted purpose
+✅ Uses extracted keyPhrases
+✅ Combines with git activity emotions
+
+### Edge Cases Handled
+
+| Case | Behavior |
+|------|----------|
+| No README | `extractionStatus: 'no_readme'`, uses hardcoded personalityHints |
+| README < 100 chars | Skipped (likely placeholder) |
+| Invalid JSON from Claude | Logged, returns null |
+| Duplicate extraction | Rate-limited via in-memory Set |
+
+---
+
 ## 🔧 Resolved Issues (2026-01-11)
 
 ### ❌ Problem: PersonalSite Missing from Voice Dropdown
@@ -250,6 +313,45 @@ SPHERE Voice: "Я родился из желания создать что-то 
 - Purple/indigo gradient (мистический стиль)
 - Отдельное окно чата
 - `temperature=0.9` для более "живого" тона
+
+---
+
+## ✅ Stale Project Cleanup (2026-01-11)
+
+### Problem
+Deleting a project folder locally (e.g., `~/projects/vob`) didn't remove it from Voice dropdown or other project lists. VOP was still visible after the folder was deleted.
+
+### ✅ Solution
+Enhanced `/api/projects` endpoint to:
+
+1. **Validate path existence** — each project's `path` is checked with `fs.access()`
+2. **Filter stale projects** — projects with non-existent paths are excluded from response
+3. **Auto-cleanup** — calling `/api/projects?cleanup=true` permanently removes stale entries from `projects.json`
+
+**Implementation in `server.js`:**
+```javascript
+// Validate each project's path exists
+for (const project of allProjects) {
+    try {
+        await fs.access(project.path);
+        validatedProjects.push({ ...project, exists: true });
+    } catch (e) {
+        staleProjects.push(project);
+        console.log(`[Projects] Stale project detected: ${project.name}`);
+    }
+}
+
+// Auto-cleanup if ?cleanup=true
+if (staleProjects.length > 0 && req.query.cleanup === 'true') {
+    const cleanedData = { projects: validatedProjects };
+    await fs.writeFile(projectsPath, JSON.stringify(cleanedData, null, 4));
+}
+```
+
+### Usage
+- **Automatic filtering:** Voice dropdown and other UIs automatically see only valid projects
+- **Manual cleanup:** Call `curl "http://localhost:3000/api/projects?cleanup=true"` to permanently remove stale entries from `projects.json`
+- **Server logs:** `[Projects] Stale project detected: VOP (/Users/admin/projects/vob)`
 
 ---
 

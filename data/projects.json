@@ -1,10 +1,6 @@
 {
     "projects": [
         {
-            "name": "VOP",
-            "path": "/Users/admin/projects/vob"
-        },
-        {
             "name": "ReelStudio",
             "path": "/Users/admin/projects/reelstudio",
             "github": "https://github.com/Humanji7/reelstudio.git"

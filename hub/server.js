@@ -11,7 +11,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
-const { sendToClaude, generateContent, sendProjectVoice } = require('./chat-api');
+const { sendToClaude, generateContent, sendProjectVoice, extractPersonalityFromReadme } = require('./chat-api');
 const { parseIntent } = require('./intent-parser');
 const soulManager = require('./soul-manager');
 
@@ -764,13 +764,36 @@ app.post('/api/project-voice', async (req, res) => {
         }
 
         // 2. Load soul (creates if not exists)
-        const soul = await soulManager.loadSoul(project.name, project.path);
+        let soul = await soulManager.loadSoul(project.name, project.path);
 
-        // 3. Get backlog for context
+        // 3. AUTO-EXTRACT personality from README if not yet extracted (Phase 2.2)
+        let extractionStatus = 'cached';
+        if (!soul.personality && project.path) {
+            console.log(`[Soul] First contact with ${project.name} — extracting personality from README...`);
+            extractionStatus = 'extracting';
+
+            try {
+                const personality = await extractPersonalityFromReadme(project.path, project.name);
+                if (personality) {
+                    await soulManager.updatePersonality(project.name, personality);
+                    soul.personality = personality;
+                    extractionStatus = 'extracted';
+                    console.log(`[Soul] ✅ Personality extracted for ${project.name}`);
+                } else {
+                    extractionStatus = 'no_readme';
+                    console.log(`[Soul] No README found for ${project.name}, using default personality`);
+                }
+            } catch (e) {
+                console.error(`[Soul] ❌ Extraction failed for ${project.name}:`, e.message);
+                extractionStatus = 'failed';
+            }
+        }
+
+        // 4. Get backlog for context
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        // 4. Get git activity for emotional interpretation
+        // 5. Get git activity for emotional interpretation
         const { loadProjects, scanProject, getActivityStats } = require('./watcher');
         let gitActivity = null;
         try {
@@ -778,13 +801,13 @@ app.post('/api/project-voice', async (req, res) => {
             gitActivity = getActivityStats(project.name, scanResult);
         } catch (e) { /* no git activity */ }
 
-        // 5. Build messages array
+        // 6. Build messages array
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // 6. Call Claude with project voice + soul + gitActivity
+        // 7. Call Claude with project voice + soul + gitActivity
         const response = await sendProjectVoice(project, messages, {
             backlogItems,
             soul,
@@ -794,7 +817,8 @@ app.post('/api/project-voice', async (req, res) => {
         res.json({
             response,
             project: project.name,
-            hasSoul: !!soul.personality
+            hasSoul: !!soul.personality,
+            extractionStatus  // 'cached' | 'extracted' | 'no_readme' | 'failed' | 'extracting'
         });
     } catch (error) {
         console.error('Project Voice error:', error.message);
@@ -839,6 +863,51 @@ app.get('/api/project-soul/:name', async (req, res) => {
     } catch (error) {
         console.error('Error loading soul:', error.message);
         res.status(500).json({ error: 'Failed to load soul' });
+    }
+});
+
+// POST /api/project-soul/:name/extract — Force re-extraction of personality from README (Phase 2.2)
+app.post('/api/project-soul/:name/extract', async (req, res) => {
+    const { name } = req.params;
+
+    try {
+        // Find project to get path
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        const data = await fs.readFile(projectsPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        const projects = parsed.projects || parsed;
+
+        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+        if (!project) {
+            return res.status(404).json({ error: `Project "${name}" not found` });
+        }
+
+        if (!project.path) {
+            return res.status(400).json({ error: `Project "${name}" has no path configured` });
+        }
+
+        console.log(`[Soul] Manual extraction requested for ${project.name}...`);
+
+        const personality = await extractPersonalityFromReadme(project.path, project.name);
+
+        if (personality) {
+            await soulManager.updatePersonality(project.name, personality);
+            console.log(`[Soul] ✅ Manual extraction complete for ${project.name}`);
+            res.json({
+                success: true,
+                personality,
+                message: `Personality extracted from README for ${project.name}`
+            });
+        } else {
+            res.status(404).json({
+                error: 'No README found or too short',
+                hint: 'Ensure project has README.md with at least 100 characters'
+            });
+        }
+    } catch (error) {
+        console.error('Error extracting personality:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to extract personality' });
     }
 });
 
@@ -1163,14 +1232,43 @@ app.post('/api/local/connect', async (req, res) => {
     }
 });
 
-// GET /api/projects — Get all connected projects
+// GET /api/projects — Get all connected projects (validates path existence)
 app.get('/api/projects', async (req, res) => {
     try {
         const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
         const data = await fs.readFile(projectsPath, 'utf-8');
         const parsed = JSON.parse(data);
-        const projects = parsed.projects || parsed;
-        res.json(projects);
+        const allProjects = parsed.projects || parsed;
+
+        // Validate each project's path exists
+        const validatedProjects = [];
+        const staleProjects = [];
+
+        for (const project of allProjects) {
+            try {
+                await fs.access(project.path);
+                validatedProjects.push({ ...project, exists: true });
+            } catch (e) {
+                // Path doesn't exist
+                staleProjects.push(project);
+                console.log(`[Projects] Stale project detected: ${project.name} (${project.path})`);
+            }
+        }
+
+        // Auto-cleanup if ?cleanup=true or if there are stale projects
+        if (staleProjects.length > 0 && req.query.cleanup === 'true') {
+            // Update projects.json without stale entries
+            const cleanedData = {
+                projects: validatedProjects.map(p => {
+                    const { exists, ...rest } = p;
+                    return rest;
+                })
+            };
+            await fs.writeFile(projectsPath, JSON.stringify(cleanedData, null, 4));
+            console.log(`[Projects] Cleaned up ${staleProjects.length} stale project(s)`);
+        }
+
+        res.json(validatedProjects);
     } catch (error) {
         console.error('Error loading projects:', error.message);
         res.json([]); // Return empty array if no projects
