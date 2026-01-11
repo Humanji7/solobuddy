@@ -199,7 +199,12 @@ async function sendToClaude(messages, context) {
         throw new Error('ANTHROPIC_API_KEY not configured');
     }
 
-    const systemPrompt = buildSystemPrompt(context);
+    // Get last user message for language detection
+    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+    const userMessage = lastUserMessage ? (lastUserMessage.content || lastUserMessage.text) : null;
+
+    const systemPrompt = buildSystemPrompt(context, { userMessage });
+
 
     const response = await axios.post(
         CLAUDE_API_URL,
