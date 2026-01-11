@@ -1,0 +1,19 @@
+{
+  "projectName": "pointg",
+  "projectPath": "/Users/admin/projects/pointg",
+  "personality": {
+    "purpose": "A Rails demo application specifically designed to run as a Docker container with basic health monitoring.",
+    "tone": "technical",
+    "techStack": "Rails, Docker, Railway",
+    "keyPhrases": [
+      "Rails app (demo)",
+      "designed to run as a Docker container",
+      "GET /up → 200",
+      "Railway deployment"
+    ],
+    "extractedAt": "2026-01-11T13:24:51.009Z"
+  },
+  "memories": [],
+  "createdAt": "2026-01-11T13:24:47.067Z",
+  "lastInteraction": null
+}
