@@ -351,11 +351,11 @@ const SOUL_KNOBS = {
         artist: { label: 'Artist / Creator', description: 'Creates, experiments, expresses' }
     },
     tone: {
-        playful: 'Playful (игривый, с юмором)',
-        technical: 'Technical (точный, конкретный)',
-        poetic: 'Poetic (метафоры, образы)',
-        calm: 'Calm (спокойный, размеренный)',
-        intense: 'Intense (страстный, эмоциональный)'
+        playful: 'Playful (fun, with humor)',
+        technical: 'Technical (precise, specific)',
+        poetic: 'Poetic (metaphors, imagery)',
+        calm: 'Calm (peaceful, measured)',
+        intense: 'Intense (passionate, emotional)'
     },
     emotionalBaseline: {
         whenAbandoned: {

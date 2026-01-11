@@ -1042,7 +1042,7 @@ async function sendChatMessage(text) {
 
                         if (action === 'clarify') {
                             // User said "not this" - add follow-up prompt
-                            chatInput.value = 'Нет, я имел в виду ';
+                            chatInput.value = 'No, I meant ';
                             chatInput.focus();
                         }
                     },
@@ -1063,7 +1063,7 @@ async function sendChatMessage(text) {
                     // Add a brief buddy acknowledgment
                     chatHistory.push({
                         role: 'buddy',
-                        text: `Понял! ${intentData.intentType === 'add_to_backlog' ? 'Добавляем идею?' : 'Вот что нашёл:'}`
+                        text: `Got it! ${intentData.intentType === 'add_to_backlog' ? 'Adding idea?' : 'Here\'s what I found:'}`
                     });
                     saveChatHistory();
 
@@ -1197,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (draftsCount) draftsCount.textContent = drafts.length;
 
             if (drafts.length === 0) {
-                aiDraftsList.innerHTML = '<div class="empty-state">Нет сохранённых драфтов.<br>Они появятся автоматически после генерации.</div>';
+                aiDraftsList.innerHTML = '<div class="empty-state">No saved drafts.<br>They will appear automatically after generation.</div>';
                 return;
             }
 
@@ -1440,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             hideVoiceTyping();
             console.error('Voice chat error:', error);
-            renderVoiceMessage('project', `Прости, я не могу ответить сейчас... (${error.message})`);
+            renderVoiceMessage('project', `Sorry, I can't respond right now... (${error.message})`);
         } finally {
             voiceChatInput.disabled = false;
             voiceChatSubmit.disabled = false;
@@ -1488,7 +1488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 voiceChatInput.placeholder = `Talk to ${selected}...`;
 
                 // Optional: auto-greet
-                renderVoiceMessage('project', `Привет. Я — ${selected}. О чём хочешь поговорить?`);
+                renderVoiceMessage('project', `Hey. I am ${selected}. What do you want to talk about?`);
             } else {
                 currentVoiceProject = null;
                 voiceChatMessages.innerHTML = '<div class="voice-placeholder">Choose a project to start talking...</div>';
@@ -1509,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceChatSubmit.disabled = false;
         voiceChatInput.focus();
         voiceChatInput.placeholder = `Talk to ${projectName}...`;
-        renderVoiceMessage('project', `Привет. Я — ${projectName}. Теперь у меня есть душа! О чём поговорим?`);
+        renderVoiceMessage('project', `Hey. I am ${projectName}. Now I have a soul! What shall we talk about?`);
     };
 
     if (voiceChatForm) {

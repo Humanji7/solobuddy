@@ -567,12 +567,12 @@ app.get('/api/buddy-message', async (req, res) => {
         console.error('Error getting buddy message:', error);
         res.json({
             left: {
-                message: 'Привет! Проекты дышат ровно.',
+                message: 'Hey! Projects are breathing steady.',
                 type: 'calm',
                 colorScheme: { name: 'sage', accent: '#2D6A4F' }
             },
             right: {
-                message: 'Сканирование завершится скоро.',
+                message: 'Scanning will finish soon.',
                 type: 'calm',
                 colorScheme: { name: 'ocean', accent: '#0077B6' }
             },
@@ -1143,20 +1143,20 @@ app.post('/api/content/generate', async (req, res) => {
         if (error.response?.status === 429) {
             return res.status(429).json({
                 success: false,
-                error: 'Rate limit. Подожди минуту.'
+                error: 'Rate limit. Wait a minute.'
             });
         }
 
         if (error.status === 500 || error.response?.status === 500) {
             return res.status(500).json({
                 success: false,
-                error: 'Claude не отвечает. Try again.'
+                error: 'Claude is not responding. Try again.'
             });
         }
 
         res.status(500).json({
             success: false,
-            error: error.message || 'Что-то пошло не так.'
+            error: error.message || 'Something went wrong.'
         });
     }
 });
