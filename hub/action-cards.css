@@ -626,7 +626,20 @@
 }
 
 /* ============================================
-   Mobile Responsive
+   Phase 3: Keyboard Navigation Focus Indicator
+   ============================================ */
+.action-card:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.action-card:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* ============================================
+   Mobile Responsive (Phase 3: Touch Optimization)
    ============================================ */
 @media (max-width: 480px) {
     .action-card {
@@ -644,17 +657,70 @@
         justify-content: space-between;
     }
 
+    /* Touch targets: minimum 48px (WCAG 2.5.5) */
     .priority-btn {
         flex: 1;
         text-align: center;
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
     }
 
     .card-actions {
         flex-direction: column;
     }
 
+    /* Primary button full width with proper touch target */
+    .btn-primary,
+    .btn-secondary {
+        min-height: 48px;
+        font-size: 16px;
+        /* Prevent iOS zoom */
+    }
+
     .btn-secondary {
         order: 1;
+    }
+
+    /* Dismiss button touch target */
+    .card-dismiss {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+    }
+
+    /* Feedback buttons touch targets */
+    .feedback-btn {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 20px;
+    }
+
+    /* Project dropdown full width */
+    .project-select {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    /* Card feedback row wrap on mobile */
+    .card-feedback {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .not-this-link {
+        width: 100%;
+        text-align: center;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Format select touch target */
+    .format-select {
+        min-height: 44px;
+        width: 100%;
     }
 
     .undo-toast {

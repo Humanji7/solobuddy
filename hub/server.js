@@ -421,6 +421,45 @@ app.post('/api/ideas/:id/link', async (req, res) => {
     }
 });
 
+// POST /api/feedback — Store learning feedback (Phase 3: Learning Feedback Loop)
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { cardType, intent, feedback, timestamp } = req.body;
+
+        if (!feedback) {
+            return res.status(400).json({ error: 'Feedback is required' });
+        }
+
+        const feedbackPath = path.join(__dirname, 'data', 'feedback.json');
+
+        // Ensure data directory exists
+        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+
+        // Read existing feedback
+        let data = [];
+        try {
+            const existing = await fs.readFile(feedbackPath, 'utf-8');
+            data = JSON.parse(existing);
+        } catch (e) { /* No file yet */ }
+
+        // Add new feedback entry
+        data.push({
+            cardType: cardType || 'unknown',
+            intent: intent || '',
+            feedback,
+            timestamp: timestamp || Date.now()
+        });
+
+        // Write back
+        await fs.writeFile(feedbackPath, JSON.stringify(data, null, 2));
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error saving feedback:', error);
+        res.status(500).json({ error: 'Failed to save feedback' });
+    }
+});
+
 // GET /api/buddy-message — Proactive buddy observation
 app.get('/api/buddy-message', async (req, res) => {
     try {
