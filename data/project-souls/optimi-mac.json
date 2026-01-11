@@ -1,7 +1,28 @@
 {
   "projectName": "optimi-mac",
   "projectPath": "/Users/admin/projects/optimi-mac",
-  "personality": null,
+  "personality": {
+    "purpose": "A project management system that enforces AI agent discipline through GUPP (Universal Propulsion Principle) - forcing agents to check hooks, create molecules for large tasks, and maintain consistent workflow patterns.",
+    "tone": "technical",
+    "techStack": "markdown, git, bash, AI agent workflows",
+    "keyPhrases": [
+      "GUPP enforcement",
+      "mandatory startup gate",
+      "molecule decomposition",
+      "hook-driven workflow",
+      "self-declaration pattern"
+    ],
+    "philosophy": "If there's work on your Hook — YOU MUST RUN IT. This is NOT a suggestion. This is THE LAW.",
+    "pains": "Agents treat instructions as recommendations rather than enforcement, leading to inconsistent workflow adherence",
+    "dreams": "Achieve reliable AI agent discipline through simple markdown-based enforcement without external CLI or orchestrators",
+    "_sources": [
+      ".agent/prompts/AUDIT_GUPP_ENFORCEMENT.md",
+      ".agent/prompts/TRIAGE_QUICK_START.md",
+      ".agent/prompts/gupp-enforcement-plan.md",
+      "CLAUDE.md"
+    ],
+    "extractedAt": "2026-01-11T13:51:52.267Z"
+  },
   "memories": [],
   "createdAt": "2026-01-11T13:15:38.123Z",
   "lastInteraction": null
