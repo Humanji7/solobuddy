@@ -36,20 +36,44 @@
 
         <!-- Buddy Messages Container -->
         <div class="buddy-messages-container" id="buddy-messages-container">
-            <div class="buddy-message buddy-left" id="buddy-message-left">
-                <div class="buddy-avatar">🧬</div>
-                <div class="buddy-content">
-                    <p class="message-text">Сканирую...</p>
+            <!-- Left Column -->
+            <div class="buddy-column buddy-column-left">
+                <div class="buddy-message buddy-left" id="buddy-0">
+                    <div class="buddy-avatar">🧬</div>
+                    <div class="buddy-content">
+                        <p class="message-text">Сканирую...</p>
+                    </div>
+                    <button class="buddy-dismiss" aria-label="Dismiss">×</button>
                 </div>
-                <button class="buddy-dismiss" aria-label="Dismiss">×</button>
+                <button class="buddy-add" data-column="left" aria-label="Add message">+</button>
+                <button class="buddy-remove" data-column="left" aria-label="Remove message">−</button>
+                <div class="buddy-message buddy-left buddy-hidden" id="buddy-2">
+                    <div class="buddy-avatar">🧬</div>
+                    <div class="buddy-content">
+                        <p class="message-text">...</p>
+                    </div>
+                    <button class="buddy-dismiss" aria-label="Dismiss">×</button>
+                </div>
             </div>
 
-            <div class="buddy-message buddy-right" id="buddy-message-right">
-                <div class="buddy-content">
-                    <p class="message-text">Сканирую...</p>
+            <!-- Right Column -->
+            <div class="buddy-column buddy-column-right">
+                <div class="buddy-message buddy-right" id="buddy-1">
+                    <div class="buddy-content">
+                        <p class="message-text">Сканирую...</p>
+                    </div>
+                    <div class="buddy-avatar">🧬</div>
+                    <button class="buddy-dismiss" aria-label="Dismiss">×</button>
                 </div>
-                <div class="buddy-avatar">🧬</div>
-                <button class="buddy-dismiss" aria-label="Dismiss">×</button>
+                <button class="buddy-add" data-column="right" aria-label="Add message">+</button>
+                <button class="buddy-remove" data-column="right" aria-label="Remove message">−</button>
+                <div class="buddy-message buddy-right buddy-hidden" id="buddy-3">
+                    <div class="buddy-content">
+                        <p class="message-text">...</p>
+                    </div>
+                    <div class="buddy-avatar">🧬</div>
+                    <button class="buddy-dismiss" aria-label="Dismiss">×</button>
+                </div>
             </div>
         </div>
 
