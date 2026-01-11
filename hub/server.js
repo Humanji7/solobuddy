@@ -158,20 +158,23 @@ function parseBacklog(content) {
             const title = itemMatch[1].trim();
             const subtitle = itemMatch[2].trim();
 
-            // Look ahead for format and hook
+            // Look ahead for format, hook, and project (Phase 2)
             let format = 'Post';
             let hook = null;
+            let project = null;
 
-            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+            for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                 const nextLine = lines[j];
                 if (nextLine.match(/^-\s*\[/)) break; // Next item
                 if (nextLine.match(/^##/)) break; // Next section
 
                 const formatMatch = nextLine.match(/Format:\s*(.+)/i);
                 const hookMatch = nextLine.match(/Hook:\s*["«]?([^"»\n]+)["»]?/i);
+                const projectMatch = nextLine.match(/Project:\s*(.+)/i);
 
                 if (formatMatch) format = formatMatch[1].trim();
                 if (hookMatch) hook = hookMatch[1].trim();
+                if (projectMatch) project = projectMatch[1].trim();
             }
 
             items.push({
@@ -179,7 +182,8 @@ function parseBacklog(content) {
                 title: subtitle ? `${title}: ${subtitle}` : title,
                 format,
                 hook,
-                priority: currentPriority
+                priority: currentPriority,
+                project
             });
             continue;
         }
@@ -193,7 +197,8 @@ function parseBacklog(content) {
                 title: simpleMatch[1].trim(),
                 format: 'Post',
                 hook: null,
-                priority: currentPriority
+                priority: currentPriority,
+                project: null
             });
         }
     }
@@ -287,10 +292,10 @@ app.get('/api/drafts', async (req, res) => {
     }
 });
 
-// POST /api/backlog — Add new idea
+// POST /api/backlog — Add new idea (with optional project link)
 app.post('/api/backlog', async (req, res) => {
     try {
-        const { title, format, priority } = req.body;
+        const { title, format, priority, project } = req.body;  // Phase 2: project param
 
         if (!title) {
             return res.status(400).json({ error: 'Title is required' });
@@ -325,7 +330,12 @@ app.post('/api/backlog', async (req, res) => {
             'post': 'Short Post'
         };
 
-        const newEntry = `- [ ] **${title}**\n  - Format: ${formatLabels[format] || format}\n\n`;
+        // Phase 2: Include project link if provided
+        let newEntry = `- [ ] **${title}**\n  - Format: ${formatLabels[format] || format}\n`;
+        if (project) {
+            newEntry += `  - Project: ${project}\n`;
+        }
+        newEntry += '\n';
 
         // Insert the new entry
         content = content.slice(0, insertPoint) + newEntry + content.slice(insertPoint);
@@ -333,10 +343,81 @@ app.post('/api/backlog', async (req, res) => {
         // Write back
         await fs.writeFile(PATHS.backlog, content, 'utf-8');
 
-        res.json({ success: true, message: 'Idea added to backlog' });
+        res.json({ success: true, message: 'Idea added to backlog', project });
     } catch (error) {
         console.error('Error adding to backlog:', error);
         res.status(500).json({ error: 'Failed to add idea to backlog' });
+    }
+});
+
+// POST /api/ideas/:id/link — Link idea to project (Phase 2: Context Awareness)
+app.post('/api/ideas/:id/link', async (req, res) => {
+    try {
+        const ideaId = parseInt(req.params.id);
+        const { project } = req.body;
+
+        if (!project) {
+            return res.status(400).json({ error: 'Project name is required' });
+        }
+
+        // Read backlog
+        let content = await fs.readFile(PATHS.backlog, 'utf-8');
+        const backlogItems = parseBacklog(content);
+
+        // Find the idea
+        const idea = backlogItems.find(item => item.id === ideaId);
+        if (!idea) {
+            return res.status(404).json({ error: 'Idea not found' });
+        }
+
+        // Find the idea in content and add/update project line
+        const lines = content.split('\n');
+        let currentId = 0;
+        let ideaLineIndex = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (line.match(/^-\s*\[[ x]\]\s*\*\*/) || (line.match(/^-\s*\[[ x]\]\s*/) && !line.match(/^\s+-/))) {
+                currentId++;
+                if (currentId === ideaId) {
+                    ideaLineIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (ideaLineIndex === -1) {
+            return res.status(404).json({ error: 'Could not locate idea in backlog' });
+        }
+
+        // Find where to insert Project line (after Format/Hook lines or right after idea)
+        let insertIndex = ideaLineIndex + 1;
+        let existingProjectIndex = -1;
+
+        for (let j = ideaLineIndex + 1; j < lines.length; j++) {
+            if (lines[j].match(/^-\s*\[/)) break; // Next item
+            if (lines[j].match(/^##/)) break; // Next section
+            if (lines[j].match(/^\s*$/)) break; // Empty line
+            if (lines[j].match(/Project:\s*/i)) {
+                existingProjectIndex = j;
+            }
+            insertIndex = j + 1;
+        }
+
+        // Update or insert project line
+        if (existingProjectIndex !== -1) {
+            lines[existingProjectIndex] = `  - Project: ${project}`;
+        } else {
+            lines.splice(insertIndex, 0, `  - Project: ${project}`);
+        }
+
+        // Write back
+        await fs.writeFile(PATHS.backlog, lines.join('\n'), 'utf-8');
+
+        res.json({ success: true, ideaId, project });
+    } catch (error) {
+        console.error('Error linking idea to project:', error);
+        res.status(500).json({ error: 'Failed to link idea to project' });
     }
 });
 

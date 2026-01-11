@@ -43,26 +43,34 @@
 ### 3. Legacy Sections ✅ (2026-01-10)
 - Session Log, Ideas Backlog, Drafts свернуты в `<details>` элемент
 
+### 4. Phase 2: Context Awareness ✅ (2026-01-10)
+- Temporal decay scoring (`calculateTemporalScore()`)
+- Project field в `backlog.md` (`Project: SPHERE`)
+- Project dropdown в AddIdeaCard (до 3 проектов)
+- `POST /api/ideas/:id/link` endpoint
+- Fuzzy project matching с aliases (path, github URL)
+
 ---
 
 ## 🔴 TODO: Next Features
 
-### Context Awareness
-**Что**: Phase 2 — связи проекты ↔ идеи  
-**Когда**: Following Nielsen Recommendation #8 (Contextual linking)
+### Phase 3: Advanced Features
+**Что**: Keyboard nav, learning feedback loop, mobile optimization  
+**Когда**: Following Nielsen Recommendations #7, #9
 
 ---
 
-## 📁 Файлы Phase 1
+## 📁 Файлы Phase 1 + Phase 2
 
 | Файл | Описание |
 |------|----------|
-| `hub/intent-parser.js` | Intent Recognition Layer |
-| `hub/action-cards.css` | CSS Design System |
+| `hub/intent-parser.js` | Intent Recognition Layer + Temporal Decay |
+| `hub/action-cards.css` | CSS Design System + Project Dropdown |
 | `hub/action-cards.js` | Action Card Components |
+| `hub/app.js` | Chat integration with project linking |
+| `hub/server.js` | API endpoints incl. `/api/ideas/:id/link` |
 | `drafts/intent-based-ai-design.md` | Концепт (updated) |
 | `drafts/nielsen-ux-review-intent-based-ai.md` | Nielsen Review |
-| `drafts/nielsen-skill-spec.md` | Nielsen Skill Spec |
 
 ---
 
@@ -86,4 +94,7 @@ cd hub && npm start
 1. [x] Добавить Help button `[?]` с pulse animation
 2. [x] Решить судьбу нижней части страницы (Session Log / Backlog / Drafts)
 3. [x] Post Editor Panel — готов принимать контент от Buddy
-4. [ ] Phase 2: Context Awareness (связи проекты ↔ идеи)
+4. [x] Phase 2: Context Awareness (связи проекты ↔ идеи)
+5. [ ] Phase 3: Keyboard navigation (Enter, Esc, Tab)
+6. [ ] Phase 3: Learning feedback loop [👍👎]
+7. [ ] Mobile-optimized card layout

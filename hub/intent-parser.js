@@ -169,16 +169,31 @@ function findBacklogIdea(message, backlogItems) {
 }
 
 /**
- * Find project by name
+ * Find project by name (fuzzy matching with aliases)
+ * @param {string} message - User message
+ * @param {Array} projects - Project list from projects.json
+ * @returns {Object|null} Matched project or null
  */
 function findProject(message, projects) {
     if (!projects || projects.length === 0) return null;
 
     const normalizedMsg = message.toLowerCase();
 
+    // Build aliases from project paths and GitHub URLs
     for (const project of projects) {
-        if (normalizedMsg.includes(project.name.toLowerCase())) {
-            return project;
+        const aliases = [
+            project.name.toLowerCase(),
+            // Extract folder name from path
+            project.path?.split('/').pop()?.toLowerCase(),
+            // Extract repo name from GitHub URL
+            project.github?.split('/').pop()?.replace('.git', '')?.toLowerCase()
+        ].filter(Boolean);
+
+        // Check if any alias matches
+        for (const alias of aliases) {
+            if (alias && normalizedMsg.includes(alias)) {
+                return project;
+            }
         }
     }
 
@@ -234,37 +249,89 @@ function extractNewIdeaTitle(message) {
 }
 
 /**
+ * Calculate temporal relevance score (Phase 2: Context Awareness)
+ * Implements decay: today=100, yesterday=70, 2-3 days=50, week+=10
+ * @param {number} daysSilent - Days since last activity
+ * @returns {number} Score 0-100
+ */
+function calculateTemporalScore(daysSilent) {
+    if (daysSilent === 0) return 100;  // Today
+    if (daysSilent === 1) return 70;   // Yesterday  
+    if (daysSilent <= 3) return 50;    // This week
+    if (daysSilent <= 7) return 30;    // Last week
+    return 10;                          // Older
+}
+
+/**
+ * Format temporal suggestion text based on days silent
+ * @param {string} projectName - Project name
+ * @param {number} daysSilent - Days since last activity
+ * @returns {string} Formatted suggestion
+ */
+function formatTemporalSuggestion(projectName, daysSilent) {
+    const timeLabel =
+        daysSilent === 0 ? 'сегодня' :
+            daysSilent === 1 ? 'вчера' :
+                daysSilent <= 3 ? `${daysSilent} дня назад` :
+                    daysSilent <= 7 ? 'на этой неделе' : 'давно';
+
+    return `Связать с ${projectName}? (трогал ${timeLabel})`;
+}
+
+/**
  * Find contextual links between entities
  */
 function findContextualLinks(entities, context) {
     const links = [];
-    const { gitActivity = [], projects = [] } = context;
+    const { gitActivity = [], projects = [], backlogItems = [] } = context;
 
-    // If idea mentions project that was recently touched
-    if (entities.idea) {
-        for (const proj of gitActivity) {
-            if (proj.daysSilent <= 1) { // Touched today or yesterday
-                const titleLower = entities.idea.title.toLowerCase();
-                const projNameLower = proj.name.toLowerCase();
+    // Phase 2: Enhanced contextual linking with temporal decay
+    const title = entities.idea?.title || entities.newIdeaTitle || '';
+    const titleLower = title.toLowerCase();
 
-                if (titleLower.includes(projNameLower) ||
-                    projNameLower.includes(titleLower.split(' ')[0])) {
-                    links.push({
-                        type: 'recent_activity',
-                        project: proj.name,
-                        daysSilent: proj.daysSilent,
-                        suggestion: proj.daysSilent === 0
-                            ? `Связать с ${proj.name}? (трогал сегодня)`
-                            : `Связать с ${proj.name}? (трогал вчера)`
-                    });
-                }
-            }
+    // Find project suggestions based on:
+    // 1. Explicit project mention in message/title
+    // 2. Recent git activity with name match
+    const projectSuggestions = [];
+
+    for (const proj of gitActivity) {
+        const projNameLower = proj.name.toLowerCase();
+        const score = calculateTemporalScore(proj.daysSilent);
+
+        // Check if project name appears in title or has recent activity
+        const nameMatch = titleLower.includes(projNameLower) ||
+            projNameLower.includes(titleLower.split(' ')[0]);
+
+        // Include if: name matches OR touched recently (score >= 50)
+        if (nameMatch || score >= 50) {
+            projectSuggestions.push({
+                project: proj.name,
+                daysSilent: proj.daysSilent,
+                score: nameMatch ? score + 20 : score,  // Bonus for name match
+                nameMatch
+            });
         }
     }
 
-    // If creating new idea and similar exists
-    if (entities.newIdeaTitle && context.backlogItems) {
-        const similar = findSimilarIdea(entities.newIdeaTitle, context.backlogItems);
+    // Sort by score descending, take top 3
+    projectSuggestions.sort((a, b) => b.score - a.score);
+    const topSuggestions = projectSuggestions.slice(0, 3);
+
+    // Add to links
+    for (const suggestion of topSuggestions) {
+        links.push({
+            type: 'project_suggestion',
+            project: suggestion.project,
+            daysSilent: suggestion.daysSilent,
+            score: suggestion.score,
+            nameMatch: suggestion.nameMatch,
+            suggestion: formatTemporalSuggestion(suggestion.project, suggestion.daysSilent, suggestion.score)
+        });
+    }
+
+    // Duplicate detection for new ideas
+    if (entities.newIdeaTitle && backlogItems.length > 0) {
+        const similar = findSimilarIdea(entities.newIdeaTitle, backlogItems);
         if (similar) {
             links.push({
                 type: 'duplicate_warning',
