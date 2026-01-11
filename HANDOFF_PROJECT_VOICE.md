@@ -1,11 +1,112 @@
 # HANDOFF: Project Voice — Голос Изнутри Проекта
 
-> **Статус:** ✅ Phase 2.4 DONE — Deep Knowledge Extraction
-> **Дата:** 2026-01-11
-> **Следующая сессия:** Phase 2.5 — Styling polish, frontend extraction indicator
+> **Статус:** ✅ Phase 2.5 SPEC COMPLETE — Ready for Implementation  
+> **Дата:** 2026-01-11  
+> **Следующая сессия:** Phase 2.6 — Implement SOUL.md parser (30-45 min)  
+> **Файлы**: `SOUL.md` (spec), `hub/soul-manager.js`, `hub/server.js`, `hub/prompt-builder.js`
 
+## Phase 2.5: SOUL Protocol (2026-01-11)
+
+### ✅ Что сделано
+
+**Documentation:**
+- ✅ Created `SOUL.md` — Semantic Organic Understanding Layer specification (9KB)
+- ✅ Defined formal file format with markdown schema
+- ✅ Extended JSON schema with new fields:
+  - `identity` → name, archetype, age, pronoun
+  - `emotionalBaseline` → default, whenAbandoned, whenActive
+  - `forbidden` → array of taboo phrases/behaviors
+- ✅ Real examples for `sphere-777` and `solobuddy` projects
+- ✅ Priority system design: SOUL.md → cached JSON → README extraction
+
+**Project cleanup:**
+- ✅ Moved 8 completed `HANDOFF_*.md` files to `archive/`
+- ✅ Moved 3 `prompt_*.md` files to `archive/`
+- ✅ Clean root: only 2 active HANDOFFs remain
+
+### 🔧 Implementation TODO (Phase 2.5 → 2.6)
+
+**Estimated time**: ~30-45 minutes
+
+#### 1. SOUL.md Parser (`soul-manager.js`)
+
+```javascript
+// NEW function
+async function parseSoulFile(projectPath) {
+  const soulPath = path.join(projectPath, 'SOUL.md');
+  const content = await fs.readFile(soulPath, 'utf-8');
+  
+  // Parse markdown sections → JSON
+  return {
+    identity: extractSection(content, '## Identity'),
+    purpose: extractSection(content, '## Purpose'),
+    tone: extractSection(content, '## Tone'),
+    philosophy: extractSection(content, '## Philosophy'),
+    keyPhrases: extractList(content, '## Key Phrases'),
+    pains: extractSection(content, '## Pains'),
+    dreams: extractSection(content, '## Dreams'),
+    emotionalBaseline: extractSection(content, '## Emotional Baseline'),
+    forbidden: extractList(content, '## Forbidden'),
+    _source: 'SOUL.md'
+  };
+}
+```
+
+#### 2. Priority Logic (`server.js` or `chat-api.js`)
+
+```javascript
+// In /api/project-voice endpoint
+const soulFilePath = path.join(project.path, 'SOUL.md');
+
+if (await fileExists(soulFilePath)) {
+  soul.personality = await soulManager.parseSoulFile(project.path);
+  soul.personality._source = 'SOUL.md';
+} else if (soul.personality) {
+  // Use cached from project-souls/{name}.json
+} else {
+  // Fallback to README extraction
+  soul.personality = await extractPersonalityFromReadme(...);
+}
+```
+
+#### 3. Enhanced Prompt Builder (`prompt-builder.js`)
+
+Add new fields to `buildProjectVoicePrompt()`:
+
+```javascript
+## Your Archetype
+${soul.personality.identity?.archetype || 'evolving entity'}
+
+## Emotional Baseline
+- Default mood: ${soul.personality.emotionalBaseline?.default}
+- When abandoned: ${soul.personality.emotionalBaseline?.whenAbandoned}
+- When active: ${soul.personality.emotionalBaseline?.whenActive}
+
+## Never Do This
+${soul.personality.forbidden?.map(f => `- ${f}`).join('\n')}
+```
+
+#### 4. UI Indicator (Optional)
+
+```html
+<!-- In project voice modal dropdown -->
+<span class="soul-indicator">
+  🔮 Soul detected
+  <!-- or -->
+  ⚡ Auto-extracted
+</span>
+```
+
+### 🧪 Testing Plan
+
+1. **Create SOUL.md** in sphere-777 project
+2. **Select sphere-777** in Voice dropdown
+3. **Verify prompt** uses SOUL.md data (check server logs)
+4. **Test fallback** with project without SOUL.md
+5. **Test emotional baseline** — ask "Как ты себя чувствуешь?"
 
 ---
+
 
 ## Концепция
 
