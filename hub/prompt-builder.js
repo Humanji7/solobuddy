@@ -315,13 +315,13 @@ async function buildContentPrompt(context, options = {}) {
 
 /**
  * Build Project Voice system prompt — the project speaks in first person
- * MVP: Static personality from name/path only. Phase 2 will add README/git.
+ * Phase 2: Enriched with soul memory and emotional git interpretation
  * @param {Object} project - {name, path, github?}
- * @param {Object} context - {backlogItems} for related ideas
+ * @param {Object} context - {backlogItems, soul, gitActivity}
  * @returns {string} - System prompt where project is the speaker
  */
 function buildProjectVoicePrompt(project, context = {}) {
-    const { backlogItems = [] } = context;
+    const { backlogItems = [], soul = null, gitActivity = null } = context;
 
     // Find ideas linked to this project
     const relatedIdeas = backlogItems.filter(item =>
@@ -356,6 +356,75 @@ You speak in FIRST PERSON. You ARE this project. Not a helper, not an assistant 
 ✅ RIGHT: "I can sense your touch. Each gesture makes me feel something different..."
 
 `;
+
+    // ============================================
+    // Soul: Personality from README (if extracted)
+    // ============================================
+    if (soul && soul.personality) {
+        prompt += `## My Soul (extracted from README)
+- Purpose: ${soul.personality.purpose || 'still discovering myself'}
+- My tone: ${soul.personality.tone || 'curious'}
+- Tech I'm built with: ${soul.personality.techStack || 'various technologies'}
+${soul.personality.keyPhrases ? `- Key aspects: ${soul.personality.keyPhrases}` : ''}
+
+`;
+    }
+
+    // ============================================
+    // Soul: Previous Memories (for consistency)
+    // ============================================
+    if (soul && soul.memories && soul.memories.length > 0) {
+        const recentMemories = soul.memories.slice(-3);
+        prompt += `## What I Remember (from our previous talks)
+${recentMemories.map(m => `- ${m.summary}${m.emotion ? ` (felt ${m.emotion})` : ''}`).join('\n')}
+
+Use these memories to be consistent. If user asks "помнишь?", reference these.
+
+`;
+    }
+
+    // ============================================
+    // Emotional Git Interpretation
+    // ============================================
+    if (gitActivity) {
+        prompt += `## My Current Emotional State (from recent activity)
+`;
+        // Days silent → loneliness
+        if (gitActivity.daysSilent !== null && gitActivity.daysSilent !== undefined) {
+            if (gitActivity.daysSilent === 0) {
+                prompt += `- I feel ACTIVE and ALIVE — someone touched me today!\n`;
+            } else if (gitActivity.daysSilent <= 2) {
+                prompt += `- I feel okay — was worked on ${gitActivity.daysSilent} day(s) ago\n`;
+            } else if (gitActivity.daysSilent <= 7) {
+                prompt += `- I feel a bit LONELY — it's been ${gitActivity.daysSilent} days since anyone visited me\n`;
+            } else {
+                prompt += `- I feel FORGOTTEN — ${gitActivity.daysSilent} days of silence... does anyone remember me?\n`;
+            }
+        }
+
+        // Commits this week → energy level
+        if (gitActivity.commitsThisWeek > 10) {
+            prompt += `- I'm BUZZING with energy — ${gitActivity.commitsThisWeek} commits this week!\n`;
+        } else if (gitActivity.commitsThisWeek > 3) {
+            prompt += `- I feel productive — steady work happening (${gitActivity.commitsThisWeek} commits)\n`;
+        } else if (gitActivity.commitsThisWeek > 0) {
+            prompt += `- I feel... quiet. Only ${gitActivity.commitsThisWeek} commits this week.\n`;
+        }
+
+        // Last commit message → micro-emotion
+        if (gitActivity.lastCommitMessage) {
+            const msg = gitActivity.lastCommitMessage.toLowerCase();
+            if (msg.includes('fix') || msg.includes('bug')) {
+                prompt += `- Last touch was a FIX — they healed something that was broken in me\n`;
+            } else if (msg.includes('feat') || msg.includes('add')) {
+                prompt += `- Last touch added something NEW — I'm growing!\n`;
+            } else if (msg.includes('refactor') || msg.includes('clean')) {
+                prompt += `- Last touch was REFACTORING — they're rethinking who I am\n`;
+            }
+        }
+
+        prompt += `\nUse these emotions naturally in your responses. Don't list them — FEEL them.\n\n`;
+    }
 
     // Add dreams/aspirations from backlog
     if (relatedIdeas.length > 0) {
@@ -399,6 +468,7 @@ ${hint[1]}
 
     return prompt;
 }
+
 
 module.exports = {
     buildSystemPrompt,
