@@ -11,19 +11,93 @@ const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
 
 // ============================================
-// README Personality Extraction (Phase 2.2)
+// Deep Knowledge Extraction (Phase 2.4)
 // ============================================
 
 // In-memory rate-limiting to prevent duplicate extractions
 const extractingProjects = new Set();
 
 /**
- * Extract personality from project README using Claude
+ * Collect documentation from multiple sources for richer personality extraction
+ * Priority: docs/ → .agent/prompts/ → context files → README.md
+ * @param {string} projectPath - Absolute path to project
+ * @returns {Promise<{content: string, sources: string[]}>}
+ */
+async function collectProjectDocumentation(projectPath) {
+    const sources = [];
+    const chunks = [];
+
+    // Priority 1: docs/ folder (PRD, TRD, PHILOSOPHY, VISION, etc.)
+    const docsFolder = path.join(projectPath, 'docs');
+    const docFiles = ['PHILOSOPHY.md', 'PRD.md', 'TRD.md', 'VISION.md',
+        'ARCHITECTURE.md', 'PROJECT_BASE.md', 'DESIGN.md'];
+    try {
+        await fs.access(docsFolder);
+        for (const docFile of docFiles) {
+            try {
+                const content = await fs.readFile(path.join(docsFolder, docFile), 'utf-8');
+                if (content.length > 50) {
+                    chunks.push(`=== ${docFile} ===\n${content.slice(0, 2000)}`);
+                    sources.push(`docs/${docFile}`);
+                }
+            } catch (e) { /* file not found, skip */ }
+        }
+    } catch (e) { /* no docs/ folder */ }
+
+    // Priority 2: .agent/prompts/ folder (Claude workflows)
+    const agentPrompts = path.join(projectPath, '.agent', 'prompts');
+    try {
+        const files = await fs.readdir(agentPrompts);
+        const mdFiles = files.filter(f => f.endsWith('.md')).slice(0, 3); // Max 3 prompts
+        for (const file of mdFiles) {
+            try {
+                const content = await fs.readFile(path.join(agentPrompts, file), 'utf-8');
+                if (content.length > 50) {
+                    chunks.push(`=== .agent/prompts/${file} ===\n${content.slice(0, 1000)}`);
+                    sources.push(`.agent/prompts/${file}`);
+                }
+            } catch (e) { /* skip */ }
+        }
+    } catch (e) { /* no .agent/prompts/ folder */ }
+
+    // Priority 3: Root context files
+    const contextFiles = ['CLAUDE.md', 'PROJECT.md', 'SOUL.md', 'HOOK.md'];
+    for (const file of contextFiles) {
+        try {
+            const content = await fs.readFile(path.join(projectPath, file), 'utf-8');
+            if (content.length > 50) {
+                chunks.push(`=== ${file} ===\n${content.slice(0, 1500)}`);
+                sources.push(file);
+            }
+        } catch (e) { /* file not found */ }
+    }
+
+    // Priority 4: README.md (fallback, always include if available)
+    const readmeNames = ['README.md', 'readme.md', 'Readme.md'];
+    for (const name of readmeNames) {
+        try {
+            const content = await fs.readFile(path.join(projectPath, name), 'utf-8');
+            if (content.length > 50) {
+                chunks.push(`=== ${name} ===\n${content.slice(0, 2000)}`);
+                sources.push(name);
+                break; // Only one README
+            }
+        } catch (e) { /* try next */ }
+    }
+
+    return {
+        content: chunks.join('\n\n---\n\n'),
+        sources
+    };
+}
+
+/**
+ * Extract personality from project documentation using Claude (Phase 2.4: multi-source)
  * @param {string} projectPath - Absolute path to project
  * @param {string} projectName - Project name (for rate-limiting)
- * @returns {Promise<Object|null>} - { purpose, tone, techStack, keyPhrases } or null
+ * @returns {Promise<Object|null>} - { purpose, tone, techStack, keyPhrases, philosophy?, pains?, dreams? }
  */
-async function extractPersonalityFromReadme(projectPath, projectName) {
+async function extractPersonalityFromDocs(projectPath, projectName) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
         console.error('[Soul] ANTHROPIC_API_KEY not configured');
@@ -38,53 +112,40 @@ async function extractPersonalityFromReadme(projectPath, projectName) {
     extractingProjects.add(projectName);
 
     try {
-        // Find README (try multiple filenames)
-        const readmeNames = ['README.md', 'readme.md', 'README', 'README.txt', 'Readme.md'];
-        let readmeContent = null;
-        let foundReadme = null;
+        // Collect documentation from all sources
+        const { content, sources } = await collectProjectDocumentation(projectPath);
 
-        for (const name of readmeNames) {
-            try {
-                const filePath = path.join(projectPath, name);
-                readmeContent = await fs.readFile(filePath, 'utf-8');
-                foundReadme = name;
-                break;
-            } catch (e) { /* try next */ }
-        }
-
-        if (!readmeContent) {
-            console.log(`[Soul] No README found for ${projectName} in ${projectPath}`);
+        if (!content || content.length < 100) {
+            console.log(`[Soul] No documentation found for ${projectName} in ${projectPath}`);
             return null;
         }
 
-        if (readmeContent.length < 100) {
-            console.log(`[Soul] README too short for ${projectName} (${readmeContent.length} chars)`);
-            return null;
-        }
+        console.log(`[Soul] Collected docs for ${projectName}: ${sources.join(', ')} (${content.length} chars)`);
 
-        console.log(`[Soul] Found ${foundReadme} for ${projectName} (${readmeContent.length} chars)`);
+        // Truncate to 8000 chars (expanded from 4000)
+        const truncated = content.slice(0, 8000);
 
-        // Truncate to save tokens (first 4000 chars is usually enough)
-        const truncated = readmeContent.slice(0, 4000);
-
-        // Call Claude with structured extraction prompt
+        // Call Claude with expanded extraction prompt
         const response = await axios.post(
             CLAUDE_API_URL,
             {
                 model: CLAUDE_MODEL,
-                max_tokens: 500,
-                temperature: 0.3, // Low for structured extraction
-                system: `You extract project personality from README files.
-Analyze the README and return ONLY valid JSON (no markdown code blocks, no explanation, just raw JSON):
+                max_tokens: 700,
+                temperature: 0.3,
+                system: `You extract project personality from documentation.
+Analyze all provided docs and return ONLY valid JSON (no markdown, no explanation):
 {
-  "purpose": "1-2 sentences about what this project does and why it exists",
+  "purpose": "1-2 sentences: what this project does and why it exists",
   "tone": "one of: friendly, technical, playful, professional, artistic, experimental",
-  "techStack": "comma-separated list of main technologies mentioned",
-  "keyPhrases": "3-5 distinctive phrases from the README that capture the project's unique essence"
+  "techStack": "comma-separated list of main technologies",
+  "keyPhrases": ["3-5 distinctive phrases that capture the project's unique essence"],
+  "philosophy": "core beliefs/values (if found in docs, else null)",
+  "pains": "known challenges or frustrations mentioned (if found, else null)",
+  "dreams": "future aspirations or roadmap goals (if found, else null)"
 }
 
-Be specific and extract actual content from the README, not generic descriptions.`,
-                messages: [{ role: 'user', content: `Extract personality from this README:\n\n${truncated}` }]
+Extract ACTUAL content from docs, not generic descriptions. Be specific.`,
+                messages: [{ role: 'user', content: `Extract personality from this project documentation:\n\n${truncated}` }]
             },
             {
                 headers: {
@@ -95,7 +156,7 @@ Be specific and extract actual content from the README, not generic descriptions
             }
         );
 
-        // Parse JSON (robust handling for potential markdown wrapping)
+        // Parse JSON (robust handling)
         const text = response.data.content[0].text;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
 
@@ -105,7 +166,12 @@ Be specific and extract actual content from the README, not generic descriptions
         }
 
         const personality = JSON.parse(jsonMatch[0]);
-        console.log(`[Soul] Successfully extracted personality for ${projectName}:`, personality.purpose?.slice(0, 50) + '...');
+
+        // Add sources metadata
+        personality._sources = sources;
+
+        console.log(`[Soul] ✅ Extracted personality for ${projectName} from ${sources.length} sources:`,
+            personality.purpose?.slice(0, 50) + '...');
 
         return personality;
 
@@ -116,6 +182,9 @@ Be specific and extract actual content from the README, not generic descriptions
         extractingProjects.delete(projectName);
     }
 }
+
+// Backward compatibility alias
+const extractPersonalityFromReadme = extractPersonalityFromDocs;
 
 /**
  * Send message to Claude API

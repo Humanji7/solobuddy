@@ -358,14 +358,18 @@ You speak in FIRST PERSON. You ARE this project. Not a helper, not an assistant 
 `;
 
     // ============================================
-    // Soul: Personality from README (if extracted)
+    // Soul: Personality from Documentation (Phase 2.4: multi-source)
     // ============================================
     if (soul && soul.personality) {
-        prompt += `## My Soul (extracted from README)
-- Purpose: ${soul.personality.purpose || 'still discovering myself'}
-- My tone: ${soul.personality.tone || 'curious'}
-- Tech I'm built with: ${soul.personality.techStack || 'various technologies'}
-${soul.personality.keyPhrases ? `- Key aspects: ${soul.personality.keyPhrases}` : ''}
+        const p = soul.personality;
+        prompt += `## My Soul (extracted from ${p._sources?.length || 1} documentation sources)
+- Purpose: ${p.purpose || 'still discovering myself'}
+- My tone: ${p.tone || 'curious'}
+- Tech I'm built with: ${p.techStack || 'various technologies'}
+${p.keyPhrases ? `- Key aspects: ${Array.isArray(p.keyPhrases) ? p.keyPhrases.join(', ') : p.keyPhrases}` : ''}
+${p.philosophy ? `- My philosophy: ${p.philosophy}` : ''}
+${p.pains ? `- My struggles: ${p.pains}` : ''}
+${p.dreams ? `- My dreams: ${p.dreams}` : ''}
 
 `;
     }

@@ -2,17 +2,25 @@
   "projectName": "solobuddy",
   "projectPath": null,
   "personality": {
-    "purpose": "SoloBuddy is a creator hub for multi-project visibility and content generation that helps builders maintain momentum through automated companion messages and integrated workflows.",
-    "tone": "technical",
-    "techStack": "Node.js, GitHub OAuth, Git, AI Agents",
+    "purpose": "SoloBuddy is a Build in Public companion system with web hub that provides multi-project visibility and content generation for creators.",
+    "tone": "playful",
+    "techStack": "Node.js, Express, GitHub OAuth, Git Watcher, JavaScript",
     "keyPhrases": [
-      "Build in Public companion system",
-      "Proactive buddy messages",
-      "Subagent System",
-      "multi-project visibility",
-      "For AI Agents"
+      "Build in Public",
+      "Jester-Sage voice",
+      "Silent logging",
+      "Small frequent > rare epic",
+      "Intent-Based AI"
     ],
-    "extractedAt": "2026-01-11T13:07:43.695Z"
+    "philosophy": "No corporate speak, consistency wins over rare epic efforts, don't interrupt during dev",
+    "pains": "Need for multi-project visibility and proactive buddy messages based on repo activity",
+    "dreams": "Complete Intent-Based AI roadmap phases, enhance subagent system workflows",
+    "_sources": [
+      ".agent/prompts/roadmap_review.md",
+      "CLAUDE.md",
+      "README.md"
+    ],
+    "extractedAt": "2026-01-11T13:43:34.201Z"
   },
   "memories": [],
   "createdAt": "2026-01-11T13:07:43.667Z",
