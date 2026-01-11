@@ -24,9 +24,6 @@ const buddyBlocks = {
     2: document.getElementById('buddy-2'),
     3: document.getElementById('buddy-3')
 };
-// Backward compatibility aliases
-const buddyLeft = buddyBlocks[0];
-const buddyRight = buddyBlocks[1];
 
 // ============================================
 // Buddy Queue System (4-slot rotation)
@@ -37,74 +34,39 @@ let slotIndices = [0, 1, 2, 3]; // Current insight index for each slot
 let autoRotateInterval = null;
 const AUTO_ROTATE_MS = 45000; // 45 seconds
 
-// Legacy aliases for backward compatibility
-let leftIndex = 0;
-let rightIndex = 1;
-
 // ============================================
 // API Functions
 // ============================================
 
-async function fetchSessionLog() {
+async function fetchApi(endpoint, defaultValue = []) {
     try {
-        const response = await fetch('/api/session-log');
-        if (!response.ok) throw new Error('Failed to fetch session log');
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`);
         return await response.json();
     } catch (error) {
-        console.error('Error fetching session log:', error);
-        return [];
+        console.error(`Error fetching ${endpoint}:`, error);
+        return defaultValue;
     }
 }
 
-async function fetchBacklog() {
-    try {
-        const response = await fetch('/api/backlog');
-        if (!response.ok) throw new Error('Failed to fetch backlog');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching backlog:', error);
-        return [];
-    }
-}
-
-async function fetchDrafts() {
-    try {
-        const response = await fetch('/api/drafts');
-        if (!response.ok) throw new Error('Failed to fetch drafts');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching drafts:', error);
-        return [];
-    }
-}
+const fetchSessionLog = () => fetchApi('/api/session-log');
+const fetchBacklog = () => fetchApi('/api/backlog');
+const fetchDrafts = () => fetchApi('/api/drafts');
 
 async function saveIdea(idea) {
-    try {
-        const response = await fetch('/api/backlog', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(idea)
-        });
-        if (!response.ok) throw new Error('Failed to save idea');
-        return await response.json();
-    } catch (error) {
-        console.error('Error saving idea:', error);
-        throw error;
-    }
+    const response = await fetch('/api/backlog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(idea)
+    });
+    if (!response.ok) throw new Error('Failed to save idea');
+    return await response.json();
 }
 
 async function fetchBuddyMessage() {
-    try {
-        const response = await fetch('/api/buddy-message');
-        if (!response.ok) throw new Error('Failed to fetch buddy message');
-        const data = await response.json();
-        // Store queue for rotation
-        insightsQueue = data.insights || [];
-        return data;
-    } catch (error) {
-        console.error('Error fetching buddy message:', error);
-        return { insights: [], projectsCount: 0 };
-    }
+    const data = await fetchApi('/api/buddy-message', { insights: [], projectsCount: 0 });
+    insightsQueue = data.insights || [];
+    return data;
 }
 
 // ============================================
@@ -190,8 +152,6 @@ function getStatusEmoji(status) {
 function renderBuddyMessage(data) {
     // Reset indices for all 4 slots
     slotIndices = [0, 1, 2, 3];
-    leftIndex = 0;
-    rightIndex = 1;
 
     // Render initial messages for visible slots (0 and 1)
     renderBuddySlot(0);
@@ -247,29 +207,6 @@ function renderBuddySlot(slotIndex) {
 }
 
 /**
- * Render a single buddy block with optional animation (legacy)
- */
-function renderBuddyBlock(side, insight) {
-    const slotIndex = side === 'left' ? 0 : 1;
-    const block = buddyBlocks[slotIndex];
-    if (!block || !insight) return;
-
-    const textEl = block.querySelector('.message-text');
-    if (textEl) {
-        textEl.textContent = insight.message;
-    }
-
-    if (insight.colorScheme) {
-        block.style.setProperty('--buddy-accent', insight.colorScheme.accent);
-    }
-
-    block.classList.remove('loading', 'dismissed', 'queue-empty');
-    block.classList.remove('appearing');
-    void block.offsetWidth;
-    block.classList.add('appearing');
-}
-
-/**
  * Dismiss and show next insight for a slot
  * @param {number|string} slotOrSide - Slot index (0-3) or legacy 'left'/'right'
  */
@@ -291,10 +228,6 @@ function dismissAndShowNext(slotOrSide) {
 
     if (nextIndex < insightsQueue.length) {
         slotIndices[slotIndex] = nextIndex;
-        // Update legacy aliases
-        if (slotIndex === 0) leftIndex = nextIndex;
-        if (slotIndex === 1) rightIndex = nextIndex;
-        // Show next insight
         renderBuddySlot(slotIndex);
     } else {
         // Queue exhausted — hide permanently
@@ -439,8 +372,8 @@ async function loadAllData() {
     sessionLogContent.innerHTML = '<div class="loading">Loading...</div>';
     backlogContent.innerHTML = '<div class="loading">Loading...</div>';
     draftsContent.innerHTML = '<div class="loading">Loading...</div>';
-    if (buddyLeft) buddyLeft.classList.add('loading');
-    if (buddyRight) buddyRight.classList.add('loading');
+    buddyBlocks[0]?.classList.add('loading');
+    buddyBlocks[1]?.classList.add('loading');
 
     // Fetch all data in parallel
     const [sessionLog, backlog, drafts, buddyMessage] = await Promise.all([
@@ -464,8 +397,7 @@ async function loadAllData() {
         sessionLog: sessionLogData.length,
         backlog: backlogData.length,
         drafts: draftsData.length,
-        buddyLeft: buddyMessage.left?.message,
-        buddyRight: buddyMessage.right?.message
+        insights: insightsQueue.length
     });
 }
 
