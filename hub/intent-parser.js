@@ -43,66 +43,14 @@ const INTENT_PATTERNS = {
         /срочн/i
     ],
     generate_content: [
-        // === Russian - formal ===
-        /напиши.*пост/i,
-        /напиши.*thread/i,
-        /напиши.*тред/i,
-        /напиши.*tip/i,
-        /напиши.*тип/i,
-        /напиши.*совет/i,
-        /сделай.*thread/i,
-        /сделай.*тред/i,
-        /сделай.*пост/i,
-        /создай.*пост/i,
-        /создай.*тред/i,
-        /сгенер[и|е]р[у|о][й|и].*пост/i,  // сгенерируй, сгенерируй, сгенерируи
-        /сгенер[и|е]р[у|о][й|и].*тред/i,
-
-        // === Russian - informal/typos ===
-        /напеши.*пост/i,     // typo: напеши
-        /напешы.*пост/i,     // typo: напешы
-        /напиш[иы].*пост/i,   // напиши/напишы
-        /напсии.*пост/i,      // typo: напсии
-        /напши.*пост/i,       // typo: напши
-        /наипши.*пост/i,      // typo: наипши
-        /напсиш.*пост/i,      // typo
-
-        // === Russian - "нужен/хочу/дай" patterns ===
-        /нужен.*пост.*про/i,
-        /нужен.*тред.*про/i,
-        /хочу.*пост.*про/i,
-        /хочу.*тред.*про/i,
-        /дай.*пост.*про/i,
-        /дай.*тред.*про/i,
-        /давай.*пост/i,
-        /давай.*тред/i,
-        /запили.*пост/i,      // slang
-        /запили.*тред/i,
-        /накидай.*пост/i,
-        /накидай.*тред/i,
-        /набросай.*пост/i,
-        /набросай.*тред/i,
-
-        // === Russian - "про X" patterns (trigger on any "про" + project) ===
-        /пост.*про/i,
-        /тред.*про/i,
-        /thread.*про/i,
-        /контент.*про/i,
-
-        // === English ===
-        /write.*post/i,
-        /write.*thread/i,
-        /generate.*content/i,
-        /generate.*post/i,
-        /generate.*thread/i,
-        /draft.*post/i,
-        /draft.*thread/i,
-        /create.*post/i,
-        /create.*thread/i,
-        /make.*post/i,
-        /make.*thread/i,
-        /gimme.*post/i,
-        /give.*me.*post/i
+        // Russian: напиши/сделай/создай + content type (tolerant to typos)
+        /(?:напи?[шс][иы]?|сделай|создай|сгенер\w+)\s*(?:пост|тред|thread|tip|совет)/i,
+        // Russian: нужен/хочу/дай/давай/запили + content type
+        /(?:нужен|хочу|дай|давай|запили|накидай|набросай)\s*(?:пост|тред)/i,
+        // Russian: content type + "про" (topic trigger)
+        /(?:пост|тред|thread|контент)\s*про/i,
+        // English: write/generate/draft/create/make + content type
+        /(?:write|generate|draft|create|make|gimme|give\s*me)\s*(?:post|thread|content)/i
     ]
 };
 
@@ -438,69 +386,46 @@ function findSimilarIdea(newTitle, backlogItems) {
  * Build Action Card specification
  */
 function buildActionCard(intentType, entities, links, confidence) {
-    // Get confidence level for badge
-    const confidenceLevel = confidence >= 85 ? 'high' : confidence >= 70 ? 'medium' : 'low';
-    const confidenceBadge = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
+    const base = {
+        confidence,
+        confidenceLevel: confidence >= 85 ? 'high' : confidence >= 70 ? 'medium' : 'low',
+        confidenceBadge: confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴'
+    };
 
-    switch (intentType) {
-        case 'add_to_backlog':
-            return {
-                type: 'AddIdeaCard',
-                title: entities.idea?.title || entities.newIdeaTitle || 'New idea',
-                existingIdea: entities.idea || null,
-                suggestedPriority: entities.priority || 'medium',
-                suggestedFormat: entities.format || 'thread',
-                links: links,
-                confidence,
-                confidenceLevel,
-                confidenceBadge,
-                // Nielsen: duplicate warning
-                hasDuplicateWarning: links.some(l => l.type === 'duplicate_warning')
-            };
+    const cardBuilders = {
+        add_to_backlog: () => ({
+            type: 'AddIdeaCard',
+            title: entities.idea?.title || entities.newIdeaTitle || 'New idea',
+            existingIdea: entities.idea || null,
+            suggestedPriority: entities.priority || 'medium',
+            suggestedFormat: entities.format || 'thread',
+            links,
+            hasDuplicateWarning: links.some(l => l.type === 'duplicate_warning')
+        }),
+        find_idea: () => ({
+            type: 'FindIdeaCard',
+            foundIdea: entities.idea || null,
+            searchQuery: entities.newIdeaTitle || ''
+        }),
+        show_activity: () => ({
+            type: 'ActivityCard',
+            project: entities.project || null
+        }),
+        change_priority: () => ({
+            type: 'ChangePriorityCard',
+            idea: entities.idea || null,
+            newPriority: entities.priority || 'high'
+        }),
+        generate_content: () => ({
+            type: 'ContentGeneratorCard',
+            prompt: entities.contentPrompt || '',
+            template: entities.format || 'thread',
+            project: entities.project?.name || null
+        })
+    };
 
-        case 'find_idea':
-            return {
-                type: 'FindIdeaCard',
-                foundIdea: entities.idea || null,
-                searchQuery: entities.newIdeaTitle || '',
-                confidence,
-                confidenceLevel,
-                confidenceBadge
-            };
-
-        case 'show_activity':
-            return {
-                type: 'ActivityCard',
-                project: entities.project || null,
-                confidence,
-                confidenceLevel,
-                confidenceBadge
-            };
-
-        case 'change_priority':
-            return {
-                type: 'ChangePriorityCard',
-                idea: entities.idea || null,
-                newPriority: entities.priority || 'high',
-                confidence,
-                confidenceLevel,
-                confidenceBadge
-            };
-
-        case 'generate_content':
-            return {
-                type: 'ContentGeneratorCard',
-                prompt: entities.contentPrompt || '',
-                template: entities.format || 'thread',  // thread, tip, post
-                project: entities.project?.name || null,
-                confidence,
-                confidenceLevel,
-                confidenceBadge
-            };
-
-        default:
-            return null; // No action card for unknown intent
-    }
+    const builder = cardBuilders[intentType];
+    return builder ? { ...base, ...builder() } : null;
 }
 
 /**
