@@ -134,20 +134,20 @@
 
     .legacy-sections summary {
         background: linear-gradient(135deg,
-            rgba(36, 34, 32, 0.9) 0%,
-            rgba(46, 42, 39, 0.95) 100%);
+                rgba(36, 34, 32, 0.9) 0%,
+                rgba(46, 42, 39, 0.95) 100%);
     }
 
     .legacy-sections summary:hover {
         background: linear-gradient(135deg,
-            rgba(212, 168, 106, 0.1) 0%,
-            rgba(46, 42, 39, 0.95) 100%);
+                rgba(212, 168, 106, 0.1) 0%,
+                rgba(46, 42, 39, 0.95) 100%);
     }
 
     .legacy-sections[open] summary {
         background: linear-gradient(135deg,
-            rgba(212, 168, 106, 0.08) 0%,
-            rgba(46, 42, 39, 0.98) 100%);
+                rgba(212, 168, 106, 0.08) 0%,
+                rgba(46, 42, 39, 0.98) 100%);
     }
 
     /* Dark mode: Chat container */
@@ -1456,8 +1456,8 @@ body {
     gap: var(--spacing-sm);
     transition: all var(--transition-fast);
     background: linear-gradient(135deg,
-        rgba(250, 247, 242, 0.5) 0%,
-        rgba(245, 240, 232, 0.8) 100%);
+            rgba(250, 247, 242, 0.5) 0%,
+            rgba(245, 240, 232, 0.8) 100%);
     border-bottom: 1px solid transparent;
 }
 
@@ -1484,16 +1484,16 @@ body {
 .legacy-sections summary:hover {
     color: var(--text-primary);
     background: linear-gradient(135deg,
-        rgba(249, 201, 123, 0.1) 0%,
-        rgba(245, 240, 232, 0.9) 100%);
+            rgba(249, 201, 123, 0.1) 0%,
+            rgba(245, 240, 232, 0.9) 100%);
 }
 
 .legacy-sections[open] summary {
     color: var(--text-primary);
     border-bottom: 1px solid var(--border-color);
     background: linear-gradient(135deg,
-        rgba(249, 201, 123, 0.08) 0%,
-        rgba(245, 240, 232, 0.95) 100%);
+            rgba(249, 201, 123, 0.08) 0%,
+            rgba(245, 240, 232, 0.95) 100%);
 }
 
 .legacy-sections .main {
@@ -1506,6 +1506,7 @@ body {
         opacity: 0;
         transform: translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

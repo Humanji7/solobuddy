@@ -120,9 +120,9 @@ function generateInsight(stats) {
     // Priority 1: Hot today (3+ commits) — direct
     if (commitsToday >= 3) {
         const templates = [
-            `${name}: ${commitsToday} за сегодня. Норм.`,
-            `${commitsToday} комов в ${name}. Жги дальше.`,
-            `${name} кипит. ${commitsToday} шт.`
+            `${name}: ${commitsToday} commits today. Nice.`,
+            `${commitsToday} commits in ${name}. Keep going.`,
+            `${name} is on fire. ${commitsToday} commits.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -134,9 +134,9 @@ function generateInsight(stats) {
     // Priority 2: Some activity today (1-2 commits)
     if (commitsToday >= 1) {
         const templates = [
-            `${name}: ${commitsToday} ком сегодня.`,
-            `${name} — работаешь.`,
-            `${name} шевелится.`
+            `${name}: ${commitsToday} commit today.`,
+            `${name} — you're working.`,
+            `${name} is moving.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -148,9 +148,9 @@ function generateInsight(stats) {
     // Priority 3: Yesterday was active (3+ commits)
     if (commitsYesterday >= 3) {
         const templates = [
-            `Вчера ${name} горел (${commitsYesterday}). А сегодня?`,
-            `${commitsYesterday} комов было вчера в ${name}. Ну и чо?`,
-            `${name}: вчера ${commitsYesterday}. Сегодня тишина пока.`
+            `Yesterday ${name} was hot (${commitsYesterday}). What about today?`,
+            `${commitsYesterday} commits yesterday in ${name}. So what now?`,
+            `${name}: ${commitsYesterday} yesterday. Quiet today so far.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -162,8 +162,8 @@ function generateInsight(stats) {
     // Priority 4: Yesterday had some activity
     if (commitsYesterday >= 1) {
         const templates = [
-            `${name}: вчера было ${commitsYesterday}. Продолжишь?`,
-            `Вчера ${name} трогал. Сегодня?`
+            `${name}: had ${commitsYesterday} yesterday. Continue?`,
+            `Touched ${name} yesterday. Today?`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -175,9 +175,9 @@ function generateInsight(stats) {
     // Priority 5: Long silence (3+ days) — provocative
     if (daysSilent !== null && daysSilent >= 3) {
         const templates = [
-            `${name} молчит ${daysSilent} ${getDaysWord(daysSilent)}. Там живой кто?`,
-            `${daysSilent} дн. без комитов в ${name}. Забил?`,
-            `${name} в коме уже ${daysSilent} ${getDaysWord(daysSilent)}.`
+            `${name} silent for ${daysSilent} ${getDaysWord(daysSilent)}. Anyone alive?`,
+            `${daysSilent} days without commits in ${name}. Gave up?`,
+            `${name} in a coma for ${daysSilent} ${getDaysWord(daysSilent)}.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -189,9 +189,9 @@ function generateInsight(stats) {
     // Priority 6: Any weekly activity — fallback
     if (commitsThisWeek > 0) {
         const templates = [
-            `${name}: ${commitsThisWeek} за неделю.`,
-            `${name} — ${commitsThisWeek} ком за неделю.`,
-            `${name} потихоньку. ${commitsThisWeek} шт.`
+            `${name}: ${commitsThisWeek} this week.`,
+            `${name} — ${commitsThisWeek} commits this week.`,
+            `${name} slowly. ${commitsThisWeek} commits.`
         ];
         return {
             message: templates[Math.floor(Math.random() * templates.length)],
@@ -203,7 +203,7 @@ function generateInsight(stats) {
     // Still nothing — project exists but no commits in 7 days
     if (daysSilent !== null) {
         return {
-            message: `${name}: тишина ${daysSilent} ${getDaysWord(daysSilent)}.`,
+            message: `${name}: silent for ${daysSilent} ${getDaysWord(daysSilent)}.`,
             type: 'silent',
             priority: 0
         };
@@ -211,23 +211,17 @@ function generateInsight(stats) {
 
     // Absolutely nothing known
     return {
-        message: `${name} — без данных.`,
+        message: `${name} — no data.`,
         type: 'unknown',
         priority: 0
     };
 }
 
 /**
- * Helper: Russian days word form
+ * Helper: English days word form
  */
 function getDaysWord(n) {
-    const lastTwo = n % 100;
-    const lastOne = n % 10;
-
-    if (lastTwo >= 11 && lastTwo <= 14) return 'дней';
-    if (lastOne === 1) return 'день';
-    if (lastOne >= 2 && lastOne <= 4) return 'дня';
-    return 'дней';
+    return n === 1 ? 'day' : 'days';
 }
 
 // ============================================
@@ -249,11 +243,11 @@ function pickRandomColorScheme() {
 
 // Calm messages when nothing is happening
 const CALM_MESSAGES = [
-    'Тишина. Работаешь или тупишь?',
-    'Всё ровно. Даже подозрительно.',
-    'Проекты молчат. Ты как?',
-    'Ничего нового. Это хорошо или плохо?',
-    'Спокойствие. Затишье перед бурей?'
+    'Silence. Working or slacking?',
+    'All quiet. Suspiciously quiet.',
+    'Projects are silent. How are you?',
+    'Nothing new. Good or bad?',
+    'Calm. The calm before the storm?'
 ];
 
 function getRandomCalmMessage() {

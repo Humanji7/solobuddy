@@ -336,12 +336,12 @@ function calculateTemporalScore(daysSilent) {
  */
 function formatTemporalSuggestion(projectName, daysSilent) {
     const timeLabel =
-        daysSilent === 0 ? 'сегодня' :
-            daysSilent === 1 ? 'вчера' :
-                daysSilent <= 3 ? `${daysSilent} дня назад` :
-                    daysSilent <= 7 ? 'на этой неделе' : 'давно';
+        daysSilent === 0 ? 'today' :
+            daysSilent === 1 ? 'yesterday' :
+                daysSilent <= 3 ? `${daysSilent} days ago` :
+                    daysSilent <= 7 ? 'this week' : 'a while ago';
 
-    return `Связать с ${projectName}? (трогал ${timeLabel})`;
+    return `Link to ${projectName}? (touched ${timeLabel})`;
 }
 
 /**
@@ -402,7 +402,7 @@ function findContextualLinks(entities, context) {
             links.push({
                 type: 'duplicate_warning',
                 existingIdea: similar,
-                suggestion: `💡 Похожая идея уже есть: \"${similar.title}\"`
+                suggestion: `💡 Similar idea exists: "${similar.title}"`
             });
         }
     }
@@ -446,7 +446,7 @@ function buildActionCard(intentType, entities, links, confidence) {
         case 'add_to_backlog':
             return {
                 type: 'AddIdeaCard',
-                title: entities.idea?.title || entities.newIdeaTitle || 'Новая идея',
+                title: entities.idea?.title || entities.newIdeaTitle || 'New idea',
                 existingIdea: entities.idea || null,
                 suggestedPriority: entities.priority || 'medium',
                 suggestedFormat: entities.format || 'thread',

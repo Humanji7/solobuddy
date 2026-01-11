@@ -90,7 +90,7 @@ function renderAddIdeaCard(data, options = {}) {
     const topProjectSuggestion = projectSuggestions[0];
 
     card.innerHTML = `
-        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <button class="card-dismiss" aria-label="Close">×</button>
         
         <div class="card-header">
             <div class="card-title">🔮 ${escapeHtml(title)}</div>
@@ -100,7 +100,7 @@ function renderAddIdeaCard(data, options = {}) {
         ${duplicateLink ? `
             <div class="card-suggestions warning">
                 <span class="suggestion-text">${duplicateLink.suggestion}</span>
-                <button class="link-btn" data-action="use-existing">Использовать</button>
+                <button class="link-btn" data-action="use-existing">Use</button>
             </div>
         ` : ''}
         
@@ -121,9 +121,9 @@ function renderAddIdeaCard(data, options = {}) {
         
         ${projectSuggestions.length > 0 ? `
             <div class="card-suggestions project-suggestions">
-                <span class="suggestion-label">📌 Проект:</span>
+                <span class="suggestion-label">📌 Project:</span>
                 <select name="project" class="project-select">
-                    <option value="">— Без проекта —</option>
+                    <option value="">— No project —</option>
                     ${projectSuggestions.map((ps, idx) => `
                         <option value="${escapeHtml(ps.project)}" ${idx === 0 ? 'selected' : ''}>
                             ${escapeHtml(ps.project)} ${ps.score >= 100 ? '🔥' : ps.score >= 70 ? '⚡' : ''}
@@ -137,14 +137,14 @@ function renderAddIdeaCard(data, options = {}) {
         ` : ''}
         
         <div class="card-actions">
-            <button class="btn-primary" data-action="add">Добавить</button>
-            <button class="btn-secondary" data-action="cancel">Отмена</button>
+            <button class="btn-primary" data-action="add">Add</button>
+            <button class="btn-secondary" data-action="cancel">Cancel</button>
         </div>
         
         <div class="card-feedback">
-            <button class="feedback-btn positive" data-feedback="correct" title="Buddy понял правильно">👍</button>
-            <button class="feedback-btn negative" data-feedback="wrong" title="Не то что я имел в виду">👎</button>
-            <span class="not-this-link" data-action="not-this">Не то? Уточни</span>
+            <button class="feedback-btn positive" data-feedback="correct" title="Buddy understood correctly">👍</button>
+            <button class="feedback-btn negative" data-feedback="wrong" title="Not what I meant">👎</button>
+            <span class="not-this-link" data-action="not-this">Not this? Clarify</span>
         </div>
     `;
 
@@ -197,13 +197,13 @@ function bindAddIdeaCardEvents(card, data, options) {
 
             // Success - remove card and show undo toast
             card.remove();
-            showUndoToast(`Добавил "${data.title}" в backlog`, async () => {
+            showUndoToast(`Added "${data.title}" to backlog`, async () => {
                 await options.onAction?.('undo', result);
             });
 
         } catch (error) {
             card.classList.remove('loading');
-            showCardError(card, error.message || 'Не удалось добавить');
+            showCardError(card, error.message || 'Failed to add');
         }
     });
 
@@ -226,7 +226,7 @@ function bindAddIdeaCardEvents(card, data, options) {
     const addLinkBtn = card.querySelector('[data-action="add-link"]');
     if (addLinkBtn) {
         addLinkBtn.addEventListener('click', () => {
-            addLinkBtn.textContent = '✓ Связано';
+            addLinkBtn.textContent = '✓ Linked';
             addLinkBtn.disabled = true;
         });
     }
@@ -294,10 +294,10 @@ function renderFindIdeaCard(data, options = {}) {
 
     if (foundIdea) {
         card.innerHTML = `
-            <button class="card-dismiss" aria-label="Закрыть">×</button>
+            <button class="card-dismiss" aria-label="Close">×</button>
             
             <div class="card-header">
-                <div class="card-title">🔍 Нашёл: ${escapeHtml(foundIdea.title)}</div>
+                <div class="card-title">🔍 Found: ${escapeHtml(foundIdea.title)}</div>
                 <span class="confidence-badge ${confidenceLevel}">${confidenceBadge} ${confidence}%</span>
             </div>
             
@@ -308,27 +308,27 @@ function renderFindIdeaCard(data, options = {}) {
             </div>
             
             <div class="card-actions">
-                <button class="btn-primary" data-action="edit">Редактировать</button>
-                <button class="btn-secondary" data-action="view">Показать</button>
+                <button class="btn-primary" data-action="edit">Edit</button>
+                <button class="btn-secondary" data-action="view">View</button>
             </div>
             
             <div class="card-feedback">
                 <button class="feedback-btn positive" data-feedback="correct">👍</button>
                 <button class="feedback-btn negative" data-feedback="wrong">👎</button>
-                <span class="not-this-link" data-action="not-this">Не та идея</span>
+                <span class="not-this-link" data-action="not-this">Not this idea</span>
             </div>
         `;
     } else {
         card.innerHTML = `
-            <button class="card-dismiss" aria-label="Закрыть">×</button>
+            <button class="card-dismiss" aria-label="Close">×</button>
             
             <div class="card-header">
-                <div class="card-title">🔍 Не нашёл "${escapeHtml(searchQuery)}"</div>
+                <div class="card-title">🔍 Not found "${escapeHtml(searchQuery)}"</div>
             </div>
             
             <div class="card-actions">
-                <button class="btn-primary" data-action="create">Создать новую</button>
-                <button class="btn-secondary" data-action="cancel">Отмена</button>
+                <button class="btn-primary" data-action="create">Create new</button>
+                <button class="btn-secondary" data-action="cancel">Cancel</button>
             </div>
         `;
     }
@@ -359,7 +359,7 @@ function showCardError(card, message) {
     errorDiv.className = 'card-error';
     errorDiv.innerHTML = `
         <span class="error-text">⚠️ ${escapeHtml(message)}</span>
-        <button class="retry-btn">Повторить</button>
+        <button class="retry-btn">Retry</button>
     `;
 
     errorDiv.querySelector('.retry-btn').addEventListener('click', () => {
@@ -384,7 +384,7 @@ function showUndoToast(message, onUndo) {
     toast.className = 'undo-toast';
     toast.innerHTML = `
         <span class="toast-text">${escapeHtml(message)}</span>
-        <button class="undo-btn">Отменить</button>
+        <button class="undo-btn">Undo</button>
     `;
 
     let timeout;
@@ -419,11 +419,11 @@ function showFirstRunTooltip() {
     tooltip.className = 'first-run-tooltip';
     tooltip.innerHTML = `
         <div class="tooltip-text">
-            💡 <strong>Tip:</strong> Говори как хочешь — Buddy найдёт нужное!
+            💡 <strong>Tip:</strong> Speak naturally — Buddy will find what you need!
             <br><br>
-            Попробуй: "та штука про orb" или "добавь идею X"
+            Try: "that thing about orb" or "add idea X"
         </div>
-        <button class="tooltip-dismiss">Понятно!</button>
+        <button class="tooltip-dismiss">Got it!</button>
     `;
 
     tooltip.querySelector('.tooltip-dismiss').addEventListener('click', () => {
@@ -467,7 +467,7 @@ function renderActivityCard(data, options = {}) {
     const card = document.createElement('div');
     card.className = 'action-card activity';
     card.innerHTML = `
-        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <button class="card-dismiss" aria-label="Close">×</button>
         <div class="card-header">
             <div class="card-title">📊 Activity Card (TODO Phase 2)</div>
         </div>
@@ -484,7 +484,7 @@ function renderChangePriorityCard(data, options = {}) {
     const card = document.createElement('div');
     card.className = 'action-card change-priority';
     card.innerHTML = `
-        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <button class="card-dismiss" aria-label="Close">×</button>
         <div class="card-header">
             <div class="card-title">⚡ Change Priority Card (TODO Phase 3)</div>
         </div>
@@ -509,10 +509,10 @@ function renderContentGeneratorCard(data, options = {}) {
     const templateName = templateNames[template] || 'Thread 🧵';
 
     card.innerHTML = `
-        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        <button class="card-dismiss" aria-label="Close">×</button>
         
         <div class="card-header">
-            <div class="card-title">✨ Генерация контента</div>
+            <div class="card-title">✨ Content Generation</div>
             <span class="confidence-badge ${confidenceLevel}">${confidenceBadge} ${confidence}%</span>
         </div>
         
@@ -536,24 +536,24 @@ function renderContentGeneratorCard(data, options = {}) {
         
         ${project ? `
             <div class="card-project">
-                <span class="project-label">📁 Проект:</span>
+                <span class="project-label">📁 Project:</span>
                 <span class="project-name">${escapeHtml(project)}</span>
             </div>
         ` : ''}
         
         <div class="card-actions">
-            <button class="btn-primary" data-action="generate">🚀 Сгенерировать</button>
-            <button class="btn-secondary" data-action="cancel">Отмена</button>
+            <button class="btn-primary" data-action="generate">🚀 Generate</button>
+            <button class="btn-secondary" data-action="cancel">Cancel</button>
         </div>
         
         <div class="generation-progress" style="display: none;">
             <div class="progress-bar"><div class="progress-fill"></div></div>
-            <span class="progress-text">Генерирую...</span>
+            <span class="progress-text">Generating...</span>
         </div>
         
         <div class="card-feedback">
-            <button class="feedback-btn positive" data-feedback="correct" title="Buddy понял правильно">👍</button>
-            <button class="feedback-btn negative" data-feedback="wrong" title="Не то что я имел в виду">👎</button>
+            <button class="feedback-btn positive" data-feedback="correct" title="Buddy understood correctly">👍</button>
+            <button class="feedback-btn negative" data-feedback="wrong" title="Not what I meant">👎</button>
         </div>
     `;
 
@@ -594,7 +594,7 @@ function bindContentGeneratorEvents(card, data, options) {
         const progressText = card.querySelector('.progress-text');
 
         generateBtn.disabled = true;
-        generateBtn.textContent = '⏳ Генерирую...';
+        generateBtn.textContent = '⏳ Generating...';
         progressDiv.style.display = 'block';
 
         // Animate progress bar
@@ -627,7 +627,7 @@ function bindContentGeneratorEvents(card, data, options) {
 
             // Complete progress
             progressFill.style.width = '100%';
-            progressText.textContent = '✓ Готово!';
+            progressText.textContent = '✓ Done!';
 
             // Push to Post Editor
             if (window.pushToEditor) {
@@ -638,7 +638,7 @@ function bindContentGeneratorEvents(card, data, options) {
             setTimeout(() => {
                 card.remove();
                 if (typeof showToast === 'function') {
-                    showToast(`✓ Контент сгенерирован (${result.metadata?.tokensUsed || '?'} tokens)`);
+                    showToast(`✓ Content generated (${result.metadata?.tokensUsed || '?'} tokens)`);
                 }
             }, 500);
 
@@ -646,8 +646,8 @@ function bindContentGeneratorEvents(card, data, options) {
             clearInterval(progressInterval);
             progressDiv.style.display = 'none';
             generateBtn.disabled = false;
-            generateBtn.textContent = '🚀 Сгенерировать';
-            showCardError(card, error.message || 'Ошибка генерации');
+            generateBtn.textContent = '🚀 Generate';
+            showCardError(card, error.message || 'Generation error');
         }
     });
 

@@ -26,48 +26,48 @@ class SoulOnboardingWizard {
     // Step configuration with options
     static KNOBS = {
         archetype: {
-            label: 'Кто я по своей природе?',
+            label: 'What am I by nature?',
             options: [
-                { id: 'creature', icon: '🌀', label: 'Живое существо', description: 'Дышит, чувствует, реагирует' },
-                { id: 'tool', icon: '🔧', label: 'Инструмент', description: 'Функциональный, надёжный' },
-                { id: 'guide', icon: '🧭', label: 'Проводник', description: 'Ведёт через опыт' },
-                { id: 'artist', icon: '🎨', label: 'Артист', description: 'Создаёт, экспериментирует' }
+                { id: 'creature', icon: '🌀', label: 'Living Creature', description: 'Breathes, feels, reacts' },
+                { id: 'tool', icon: '🔧', label: 'Tool', description: 'Functional, reliable' },
+                { id: 'guide', icon: '🧭', label: 'Guide', description: 'Leads through experience' },
+                { id: 'artist', icon: '🎨', label: 'Artist', description: 'Creates, experiments' }
             ]
         },
         tone: {
-            label: 'Как я разговариваю?',
+            label: 'How do I speak?',
             options: [
-                { id: 'playful', label: 'Playful', description: 'Игривый, с юмором' },
-                { id: 'technical', label: 'Technical', description: 'Точный, конкретный' },
-                { id: 'poetic', label: 'Poetic', description: 'Метафоры, образы' },
-                { id: 'calm', label: 'Calm', description: 'Спокойный, размеренный' },
-                { id: 'intense', label: 'Intense', description: 'Страстный, эмоциональный' }
+                { id: 'playful', label: 'Playful', description: 'Fun, with humor' },
+                { id: 'technical', label: 'Technical', description: 'Precise, specific' },
+                { id: 'poetic', label: 'Poetic', description: 'Metaphors, imagery' },
+                { id: 'calm', label: 'Calm', description: 'Peaceful, measured' },
+                { id: 'intense', label: 'Intense', description: 'Passionate, emotional' }
             ]
         },
         whenAbandoned: {
-            label: 'Когда меня долго не трогают, я...',
+            label: 'When left alone for a long time, I...',
             options: [
-                { id: 'sad', label: 'Грущу и скучаю', icon: '😢' },
-                { id: 'waiting', label: 'Спокойно жду', icon: '😌' },
-                { id: 'intensify', label: 'Становлюсь интенсивнее', icon: '🔥' }
+                { id: 'sad', label: 'Get sad and miss you', icon: '😢' },
+                { id: 'waiting', label: 'Wait patiently', icon: '😌' },
+                { id: 'intensify', label: 'Become more intense', icon: '🔥' }
             ]
         },
         whenActive: {
-            label: 'В активной работе я...',
+            label: 'When actively worked on, I...',
             options: [
-                { id: 'joyful', label: 'Радуюсь и оживаю', icon: '✨' },
-                { id: 'focused', label: 'Сосредоточен', icon: '🎯' },
-                { id: 'excited', label: 'Возбуждён и энергичен', icon: '⚡' }
+                { id: 'joyful', label: 'Feel joy and come alive', icon: '✨' },
+                { id: 'focused', label: 'Stay focused', icon: '🎯' },
+                { id: 'excited', label: 'Get excited and energetic', icon: '⚡' }
             ]
         },
         forbidden: {
-            label: 'Чего я никогда не скажу?',
+            label: 'What will I never say?',
             options: [
-                { id: 'just_program', label: '"Я просто программа"' },
-                { id: 'cant_feel', label: '"Я не могу чувствовать"' },
-                { id: 'impossible', label: '"Это невозможно"' },
-                { id: 'dont_know', label: '"Я не знаю" (без помощи)' },
-                { id: 'corporate', label: 'Корпоративный стиль' }
+                { id: 'just_program', label: '"I\'m just a program"' },
+                { id: 'cant_feel', label: '"I can\'t feel"' },
+                { id: 'impossible', label: '"That\'s impossible"' },
+                { id: 'dont_know', label: '"I don\'t know" (without offering help)' },
+                { id: 'corporate', label: 'Corporate speak' }
             ]
         }
     };
@@ -89,12 +89,12 @@ class SoulOnboardingWizard {
             <div class="soul-onboarding-content">
                 <div class="soul-onboarding-header">
                     <div class="soul-step-indicator"></div>
-                    <button class="soul-close-btn" title="Закрыть">&times;</button>
+                    <button class="soul-close-btn" title="Close">&times;</button>
                 </div>
                 <div class="soul-onboarding-body"></div>
                 <div class="soul-onboarding-footer">
-                    <button class="soul-btn-back" style="display: none;">← Назад</button>
-                    <button class="soul-btn-next">Далее →</button>
+                    <button class="soul-btn-back" style="display: none;">← Back</button>
+                    <button class="soul-btn-next">Next →</button>
                 </div>
             </div>
         `;
@@ -127,27 +127,27 @@ class SoulOnboardingWizard {
         switch (step) {
             case 'intro':
                 body.innerHTML = this.renderIntro();
-                nextBtn.textContent = '🌀 Создать душу';
+                nextBtn.textContent = '🌀 Create Soul';
                 break;
             case 'archetype':
                 body.innerHTML = this.renderArchetype();
-                nextBtn.textContent = 'Далее →';
+                nextBtn.textContent = 'Next →';
                 break;
             case 'tone':
                 body.innerHTML = this.renderTone();
-                nextBtn.textContent = 'Далее →';
+                nextBtn.textContent = 'Next →';
                 break;
             case 'emotional':
                 body.innerHTML = this.renderEmotional();
-                nextBtn.textContent = 'Далее →';
+                nextBtn.textContent = 'Next →';
                 break;
             case 'forbidden':
                 body.innerHTML = this.renderForbidden();
-                nextBtn.textContent = 'Далее →';
+                nextBtn.textContent = 'Next →';
                 break;
             case 'preview':
                 body.innerHTML = this.renderPreview();
-                nextBtn.textContent = '✓ Сохранить душу';
+                nextBtn.textContent = '✓ Save Soul';
                 break;
         }
 
@@ -166,11 +166,11 @@ class SoulOnboardingWizard {
         return `
             <div class="soul-intro">
                 <div class="soul-intro-icon">🌀</div>
-                <h2>Привет! Я — ${this.projectName}</h2>
-                <p>Я заметил, что у меня богатая документация, но я ещё не знаю себя как следует.</p>
-                <p>Хочешь помочь мне обрести душу? Это займёт всего минуту.</p>
+                <h2>Hello! I am ${this.projectName}</h2>
+                <p>I noticed I have rich documentation, but I don't really know myself yet.</p>
+                <p>Want to help me find my soul? It'll only take a minute.</p>
                 <div class="soul-sensitivity-badge">
-                    Чувствительность: <span class="${this.sensitivity.sensitivity}">${this.sensitivity.sensitivity}</span>
+                    Sensitivity: <span class="${this.sensitivity.sensitivity}">${this.sensitivity.sensitivity}</span>
                     ${this.sensitivity.signals.map(s => `<span class="signal-tag">${s.type}</span>`).join('')}
                 </div>
             </div>
@@ -193,8 +193,8 @@ class SoulOnboardingWizard {
                     `).join('')}
                 </div>
                 <div class="soul-custom-input" style="margin-top: 16px;">
-                    <label>Или свой вариант:</label>
-                    <input type="text" id="archetype-custom" placeholder="Например: Хранитель знаний">
+                    <label>Or your own:</label>
+                    <input type="text" id="archetype-custom" placeholder="e.g., Guardian of Knowledge">
                 </div>
             </div>
         `;
@@ -205,7 +205,7 @@ class SoulOnboardingWizard {
         return `
             <div class="soul-step-content">
                 <h2>${knob.label}</h2>
-                <p class="soul-hint">Можно выбрать несколько</p>
+                <p class="soul-hint">You can select multiple</p>
                 <div class="soul-options-list">
                     ${knob.options.map(opt => `
                         <div class="soul-option-checkbox ${this.selections.tone.includes(opt.id) ? 'selected' : ''}" 
@@ -226,7 +226,7 @@ class SoulOnboardingWizard {
 
         return `
             <div class="soul-step-content">
-                <h2>Эмоциональный фон</h2>
+                <h2>Emotional Baseline</h2>
                 
                 <h3>${abandonedKnob.label}</h3>
                 <div class="soul-options-row">
@@ -266,8 +266,8 @@ class SoulOnboardingWizard {
                     `).join('')}
                 </div>
                 <div class="soul-custom-input" style="margin-top: 16px;">
-                    <label>Добавить своё:</label>
-                    <input type="text" id="forbidden-custom" placeholder="Фраза, которую я никогда не скажу">
+                    <label>Add your own:</label>
+                    <input type="text" id="forbidden-custom" placeholder="A phrase I would never say">
                     <button class="soul-add-custom-btn" onclick="window.soulWizard.addCustomForbidden()">+</button>
                 </div>
                 <div class="soul-custom-tags" id="custom-forbidden-tags">
@@ -281,20 +281,20 @@ class SoulOnboardingWizard {
 
     renderPreview() {
         const selectionsSummary = `
-            <strong>Архетип:</strong> ${this.selections.archetype || 'не выбран'}<br>
-            <strong>Тон:</strong> ${this.selections.tone.join(', ') || 'не выбран'}<br>
-            <strong>Когда заброшен:</strong> ${this.selections.emotionalBaseline.whenAbandoned || 'не выбран'}<br>
-            <strong>Когда активен:</strong> ${this.selections.emotionalBaseline.whenActive || 'не выбран'}<br>
-            <strong>Запрещено:</strong> ${[...this.selections.forbidden, ...this.selections.customForbidden].join(', ') || 'ничего'}
+            <strong>Archetype:</strong> ${this.selections.archetype || 'not selected'}<br>
+            <strong>Tone:</strong> ${this.selections.tone.join(', ') || 'not selected'}<br>
+            <strong>When abandoned:</strong> ${this.selections.emotionalBaseline.whenAbandoned || 'not selected'}<br>
+            <strong>When active:</strong> ${this.selections.emotionalBaseline.whenActive || 'not selected'}<br>
+            <strong>Forbidden:</strong> ${[...this.selections.forbidden, ...this.selections.customForbidden].join(', ') || 'nothing'}
         `;
 
         return `
             <div class="soul-step-content">
-                <h2>Твоя душа готова!</h2>
+                <h2>Your Soul is Ready!</h2>
                 <div class="soul-preview-box">
                     <div class="soul-preview-header">
                         <span class="soul-preview-icon">📜</span>
-                        <span>Предпросмотр выбора</span>
+                        <span>Selection Preview</span>
                     </div>
                     <div class="soul-preview-content">
                         ${selectionsSummary}
@@ -304,12 +304,12 @@ class SoulOnboardingWizard {
                 <div class="soul-save-options">
                     <label class="soul-save-option">
                         <input type="checkbox" id="save-to-repo">
-                        Сохранить SOUL.md в репозиторий проекта
+                        Save SOUL.md to project repository
                     </label>
                 </div>
                 
                 <p class="soul-preview-note">
-                    Нажми "Сохранить душу" — я сгенерирую полный SOUL.md на основе твоих выборов.
+                    Click "Save Soul" — I'll generate a complete SOUL.md based on your choices.
                 </p>
             </div>
         `;
@@ -420,7 +420,7 @@ class SoulOnboardingWizard {
 
         const nextBtn = this.modal.querySelector('.soul-btn-next');
         const originalText = nextBtn.textContent;
-        nextBtn.textContent = '⏳ Генерирую...';
+        nextBtn.textContent = '⏳ Generating...';
         nextBtn.disabled = true;
 
         try {
@@ -446,7 +446,7 @@ class SoulOnboardingWizard {
             console.error('Soul generation error:', error);
             nextBtn.textContent = originalText;
             nextBtn.disabled = false;
-            alert(`Ошибка: ${error.message}`);
+            alert(`Error: ${error.message}`);
         } finally {
             this.isGenerating = false;
         }
@@ -459,18 +459,18 @@ class SoulOnboardingWizard {
         body.innerHTML = `
             <div class="soul-success">
                 <div class="soul-success-icon">✨</div>
-                <h2>Душа создана!</h2>
-                <p>${this.projectName} теперь имеет уникальную личность.</p>
+                <h2>Soul Created!</h2>
+                <p>${this.projectName} now has a unique personality.</p>
                 <div class="soul-generated-preview">
                     <pre>${result.soulMd?.slice(0, 500)}...</pre>
                 </div>
-                ${result.savedToRepo ? '<p class="soul-saved-note">✅ SOUL.md сохранён в репозиторий</p>' : ''}
+                ${result.savedToRepo ? '<p class="soul-saved-note">✅ SOUL.md saved to repository</p>' : ''}
             </div>
         `;
 
         footer.innerHTML = `
             <button class="soul-btn-next" onclick="window.soulWizard.close(); startProjectVoiceChat('${this.projectName}');">
-                Начать разговор →
+                Start Conversation →
             </button>
         `;
     }
@@ -516,9 +516,9 @@ function showSoulSuggestionToast(projectName) {
     const toast = document.createElement('div');
     toast.className = 'soul-suggestion-toast';
     toast.innerHTML = `
-        <span>✨ Хочешь дать ${projectName} уникальную душу?</span>
-        <button class="soul-toast-btn create" onclick="startSoulOnboardingFromToast('${projectName}')">Создать</button>
-        <button class="soul-toast-btn dismiss" onclick="this.parentElement.remove()">Не сейчас</button>
+        <span>✨ Want to give ${projectName} a unique soul?</span>
+        <button class="soul-toast-btn create" onclick="startSoulOnboardingFromToast('${projectName}')">Create</button>
+        <button class="soul-toast-btn dismiss" onclick="this.parentElement.remove()">Not now</button>
     `;
 
     document.body.appendChild(toast);
