@@ -1,13 +1,161 @@
 # HANDOFF: Project Voice — Голос Изнутри Проекта
 
-> **Статус:** ✅ Phase 2.5 SPEC COMPLETE — Ready for Implementation  
+> **Статус:** ⚠️ Phase 2.7 IMPLEMENTED — Manual Testing Required  
 > **Дата:** 2026-01-11  
-> **Следующая сессия:** Phase 2.6 — Implement SOUL.md parser (30-45 min)  
-> **Файлы**: `SOUL.md` (spec), `hub/soul-manager.js`, `hub/server.js`, `hub/prompt-builder.js`
+> **Следующая сессия:** Phase 2.7 — Complete manual testing + fix edge cases (30-60 min)  
+> **Файлы**: See implementation section below
+
+## Phase 2.7: SOUL Onboarding Wizard (2026-01-11 17:30)
+
+### ✅ Что сделано
+
+**Backend (100% complete):**
+- ✅ Created `hub/sensitivity-detector.js` — signal-based scoring system
+  - Detects: `philosophy_doc` (+3), `vision_doc` (+2), `emotional_readme` (+2), `mature_project` (+1), `active_project` (+1), `agent_prompts` (+1)
+  - Returns sensitivity: `high` (≥4), `medium` (≥2), `low` (<2)
+  - Recommendations: `onboarding` (force wizard), `suggest_onboarding` (soft toast), `auto_extract` (skip), `use_existing` (has SOUL.md)
+  
+- ✅ Updated `hub/soul-manager.js`:
+  - `saveSoulFromOnboarding(projectName, selections, generatedMd, personality)` — saves wizard results
+  - `getSoulSource(projectName)` — returns 'onboarding' | 'extraction' | 'manual' | 'none'
+  - `hasCompletedOnboarding(projectName)` — checks if onboarding was completed
+  
+- ✅ Updated `hub/server.js` — new endpoints:
+  - `GET /api/project-sensitivity/:name` — checks if project needs onboarding
+  - `POST /api/project-soul/:name/generate` — generates SOUL.md from selections
+  
+- ✅ Updated `hub/chat-api.js`:
+  - `generateSoulFromSelections(projectName, selections, projectPath)` — LLM-based SOUL.md generation
+  - `SOUL_KNOBS` config — defines all wizard options (archetype, tone, emotional baseline, forbidden)
+
+**Frontend (100% complete):**
+- ✅ Created `hub/soul-onboarding.js` — full wizard implementation
+  - `SoulOnboardingWizard` class with 6 steps: intro → archetype → tone → emotional → forbidden → preview
+  - `checkSoulOnboarding(projectName)` — checks sensitivity and triggers wizard
+  - `showSoulSuggestionToast(projectName)` — soft suggestion for medium sensitivity
+  
+- ✅ Created `hub/soul-onboarding.css` — glassmorphism wizard styling
+  - Modal overlay with blur backdrop
+  - Step indicators with animations
+  - Responsive grid/list/pill options
+  - Success animations
+  
+- ✅ Updated `hub/app.js`:
+  - Modified `voiceProjectSelect` change handler to check onboarding before starting chat
+  - Added `window.startProjectVoiceChat(projectName)` callback for post-onboarding flow
+  
+- ✅ Updated `hub/index.html`:
+  - Added `<link>` to `soul-onboarding.css`
+  - Added `<script>` to `soul-onboarding.js`
+
+### ✅ Partial Testing Complete
+
+**API Endpoints:**
+```bash
+# Tested successfully:
+GET /api/project-sensitivity/sphere-777
+→ Returns: { sensitivity: "medium", score: 3, recommendation: "suggest_onboarding" }
+
+GET /api/project-sensitivity/solobuddy  
+→ Returns: { sensitivity: "has_soul", recommendation: "use_existing" }
+```
+
+**Browser UI:**
+- ✅ Server starts successfully
+- ✅ Project Voice modal opens
+- ✅ Dropdown populated with 7 projects
+- ✅ Selecting `sphere-777` triggers soft suggestion toast: "✨ Хочешь дать sphere-777 уникальную душу?"
+- ✅ Toast has "Создать" / "Не сейчас" buttons
+
+### ⚠️ Что НЕ протестировано (manual testing required)
+
+**Wizard Flow:**
+1. [ ] Click "Создать" button → wizard modal should open
+2. [ ] Step 1 (Intro) → should show project name and sensitivity signals
+3. [ ] Step 2 (Archetype) → select archetype (creature/tool/guide/artist)
+4. [ ] Step 3 (Tone) → multi-select tone options
+5. [ ] Step 4 (Emotional Baseline) → select whenAbandoned + whenActive
+6. [ ] Step 5 (Forbidden) → select forbidden phrases + add custom
+7. [ ] Step 6 (Preview) → shows selections summary
+8. [ ] Click "Сохранить душу" → generates SOUL.md via LLM
+
+**SOUL Generation:**
+- [ ] LLM generates complete SOUL.md markdown
+- [ ] Personality parsed correctly
+- [ ] Soul saved to `data/project-souls/{name}.json`
+- [ ] Optional: save to project repo as `SOUL.md`
+
+**Post-Onboarding:**
+- [ ] After save, wizard closes
+- [ ] Voice chat starts with new personality
+- [ ] Project responds using generated SOUL data
+
+**Edge Cases:**
+- [ ] Project with `high` sensitivity (≥4 score) → should force onboarding wizard (not just toast)
+- [ ] Dismiss toast → normal chat should start
+- [ ] Re-select same project → should not re-trigger onboarding if completed
+- [ ] Custom archetype input
+- [ ] Custom forbidden phrases
+
+### 🧪 Manual Test Plan
+
+#### Test 1: Medium Sensitivity (Soft Suggestion)
+1. Open http://localhost:3000
+2. Click `🌀 Voice` button
+3. Select `sphere-777` from dropdown
+4. **Verify:** Toast appears with "✨ Хочешь дать sphere-777 уникальную душу?"
+5. Click "Создать"
+6. **Verify:** Wizard modal opens with intro step
+7. Complete all wizard steps
+8. **Verify:** SOUL.md generated and saved
+9. **Verify:** Voice chat starts with personality
+
+#### Test 2: High Sensitivity (Force Onboarding)
+1. Create a test project with:
+   - `docs/PHILOSOPHY.md` (+3)
+   - `docs/VISION.md` (+2)
+   - Total score ≥ 4
+2. Add project to SoloBuddy
+3. Select in Voice dropdown
+4. **Verify:** Wizard opens immediately (no toast)
+
+#### Test 3: Has SOUL (Skip Onboarding)
+1. Select `solobuddy` from dropdown
+2. **Verify:** No wizard, no toast — normal chat starts
+3. **Verify:** Uses existing SOUL.md data
+
+### 🐛 Known Issues
+
+**Browser Console Errors:**
+- `404 Not Found` for some resource (needs investigation)
+
+**Potential Bugs (untested):**
+- Custom archetype input might not save correctly
+- Custom forbidden phrases array handling
+- SOUL.md markdown formatting edge cases
+- Error handling if LLM generation fails
+
+### 📁 Files Modified
+
+**New Files:**
+- `hub/sensitivity-detector.js` (214 lines)
+- `hub/soul-onboarding.js` (549 lines)
+- `hub/soul-onboarding.css` (595 lines)
+
+**Modified Files:**
+- `hub/soul-manager.js` (+63 lines)
+- `hub/server.js` (+109 lines)  
+- `hub/chat-api.js` (+192 lines)
+- `hub/app.js` (+27 lines)
+- `hub/index.html` (+2 lines)
+
+**Total:** +1751 lines added
+
+---
 
 ## Phase 2.5: SOUL Protocol (2026-01-11)
 
-### ✅ Что сделано
+### ✅ Что сделано (Phase 2.5)
 
 **Documentation:**
 - ✅ Created `SOUL.md` — Semantic Organic Understanding Layer specification (9KB)

@@ -342,4 +342,193 @@ async function sendProjectVoice(project, messages, context = {}) {
     return response.data.content[0].text;
 }
 
-module.exports = { sendToClaude, generateContent, sendProjectVoice, extractPersonalityFromReadme };
+// SOUL Knobs configuration (used for both frontend and generation prompts)
+const SOUL_KNOBS = {
+    archetype: {
+        creature: { label: 'Living Creature', description: 'Breathes, feels, reacts to touch' },
+        tool: { label: 'Tool / Utility', description: 'Functional, reliable, gets the job done' },
+        guide: { label: 'Guide / Companion', description: 'Leads through experience, shows the way' },
+        artist: { label: 'Artist / Creator', description: 'Creates, experiments, expresses' }
+    },
+    tone: {
+        playful: 'Playful (игривый, с юмором)',
+        technical: 'Technical (точный, конкретный)',
+        poetic: 'Poetic (метафоры, образы)',
+        calm: 'Calm (спокойный, размеренный)',
+        intense: 'Intense (страстный, эмоциональный)'
+    },
+    emotionalBaseline: {
+        whenAbandoned: {
+            sad: 'Gets lonely and misses interaction',
+            waiting: 'Waits calmly, sleeps',
+            intensify: 'Becomes more intense, calls for attention'
+        },
+        whenActive: {
+            joyful: 'Joyful and energized',
+            focused: 'Focused and serious',
+            excited: 'Excited and energic'
+        }
+    },
+    forbidden: {
+        just_program: '"I am just a program / code"',
+        cant_feel: '"I cannot feel / have emotions"',
+        impossible: '"This is impossible"',
+        dont_know: '"I don\'t know" (without trying to help)',
+        corporate: 'Formal/corporate phrases'
+    }
+};
+
+/**
+ * Generate SOUL.md content from onboarding wizard selections (Phase 2.7)
+ * @param {string} projectName - Project name 
+ * @param {Object} selections - User's wizard selections
+ * @param {string} projectPath - Absolute path to project (for docs context)
+ * @returns {Promise<{success: boolean, soulMd?: string, personality?: Object, error?: string}>}
+ */
+async function generateSoulFromSelections(projectName, selections, projectPath) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+
+    if (!apiKey) {
+        return { success: false, error: 'ANTHROPIC_API_KEY not configured' };
+    }
+
+    try {
+        // Collect project docs for context
+        let docsContext = '';
+        if (projectPath) {
+            const { content } = await collectProjectDocumentation(projectPath);
+            docsContext = content.slice(0, 4000); // Limit for this use case
+        }
+
+        // Build selection description for prompt
+        const archetypeInfo = SOUL_KNOBS.archetype[selections.archetype] || { label: selections.archetype, description: '' };
+        const toneList = (selections.tone || []).map(t => SOUL_KNOBS.tone[t] || t).join(', ');
+        const whenAbandoned = SOUL_KNOBS.emotionalBaseline.whenAbandoned[selections.emotionalBaseline?.whenAbandoned]
+            || selections.emotionalBaseline?.whenAbandoned || 'waits patiently';
+        const whenActive = SOUL_KNOBS.emotionalBaseline.whenActive[selections.emotionalBaseline?.whenActive]
+            || selections.emotionalBaseline?.whenActive || 'focused';
+
+        const forbiddenList = [
+            ...(selections.forbidden || []).map(f => SOUL_KNOBS.forbidden[f] || f),
+            ...(selections.customForbidden || [])
+        ].filter(Boolean);
+
+        const prompt = `Create a SOUL.md file for the project "${projectName}".
+
+USER SELECTED THESE ATTRIBUTES:
+- Archetype: ${archetypeInfo.label} (${archetypeInfo.description})
+- Tone: ${toneList || 'not specified'}
+- When abandoned: ${whenAbandoned}
+- When active: ${whenActive}
+- Forbidden phrases: ${forbiddenList.length > 0 ? forbiddenList.join(', ') : 'none specified'}
+
+PROJECT DOCUMENTATION CONTEXT:
+${docsContext || 'No documentation available'}
+
+GENERATE A COMPLETE SOUL.md FILE with these sections:
+
+# SOUL.md
+
+## Identity
+- Name: (project name)
+- Archetype: (selected archetype with creative description)
+- Pronoun: (appropriate pronoun based on archetype)
+
+## Purpose
+(extract from docs or infer from archetype - why this project exists)
+
+## Tone
+(expand on selected tones with specific examples of how it speaks)
+
+## Philosophy
+(core beliefs - extract from docs if available, or create based on archetype)
+
+## Key Phrases
+(3-5 distinctive phrases this project would use)
+
+## Emotional Baseline
+- Default: (general mood)
+- When abandoned: (selected behavior, expanded)
+- When active: (selected behavior, expanded)
+
+## Forbidden
+(list what this project would never say, expanded from selections)
+
+## Dreams
+(future aspirations - extract from docs or infer)
+
+## Pains
+(challenges or frustrations - extract from docs or infer)
+
+Be CREATIVE and give this project a UNIQUE voice. Write in a style that matches the selected archetype and tone.
+If docs are in Russian, write the SOUL.md in Russian.
+Return ONLY the markdown content, no explanations.`;
+
+        const response = await axios.post(
+            CLAUDE_API_URL,
+            {
+                model: CLAUDE_MODEL,
+                max_tokens: 1500,
+                temperature: 0.8,
+                system: 'You are a creative writer who gives projects unique, memorable personalities. Your SOUL.md files are poetic yet specific.',
+                messages: [{ role: 'user', content: prompt }]
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                }
+            }
+        );
+
+        const soulMd = response.data.content[0].text;
+
+        // Parse the generated SOUL.md into personality object
+        const personality = {
+            archetype: selections.archetype,
+            tone: selections.tone || [],
+            emotionalBaseline: selections.emotionalBaseline || {},
+            forbidden: forbiddenList,
+            _source: 'onboarding',
+            _generatedAt: new Date().toISOString()
+        };
+
+        // Extract purpose from generated content if possible
+        const purposeMatch = soulMd.match(/## Purpose\n+([\s\S]*?)(?=\n## |$)/);
+        if (purposeMatch) {
+            personality.purpose = purposeMatch[1].trim().slice(0, 500);
+        }
+
+        // Extract key phrases
+        const phrasesMatch = soulMd.match(/## Key Phrases\n+([\s\S]*?)(?=\n## |$)/);
+        if (phrasesMatch) {
+            const phrases = phrasesMatch[1].match(/[-•]\s*(.+)/g);
+            if (phrases) {
+                personality.keyPhrases = phrases.map(p => p.replace(/^[-•]\s*/, '').trim());
+            }
+        }
+
+        console.log(`[Soul] ✅ Generated SOUL.md for ${projectName} (${soulMd.length} chars)`);
+
+        return {
+            success: true,
+            soulMd,
+            personality
+        };
+
+    } catch (error) {
+        console.error(`[Soul] Generation failed for ${projectName}:`, error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+module.exports = {
+    sendToClaude,
+    generateContent,
+    sendProjectVoice,
+    extractPersonalityFromReadme,
+    generateSoulFromSelections,
+    SOUL_KNOBS
+};
+
