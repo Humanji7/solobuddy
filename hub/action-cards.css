@@ -523,11 +523,11 @@
     position: fixed;
     bottom: 100px;
     right: 24px;
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    background: linear-gradient(135deg, #9B3A2A, #7D2B24);
     border-radius: 12px;
     padding: 16px 20px;
     max-width: 280px;
-    box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 8px 32px rgba(155, 58, 42, 0.3);
     z-index: 999;
     animation: tooltipPulse 2s ease-in-out infinite;
 }
@@ -574,7 +574,7 @@
     right: 24px;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid #2563eb;
+    border-top: 8px solid #7D2B24;
 }
 
 /* ============================================
