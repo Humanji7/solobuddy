@@ -24,6 +24,8 @@ SoloBuddy is a **local dashboard + AI buddy** that helps you stay consistent wit
 
 ## Quick Start
 
+**Requirements:** Node.js 18+, npm
+
 ```bash
 # Clone
 git clone https://github.com/Humanji7/solobuddy.git
@@ -31,7 +33,7 @@ cd solobuddy
 
 # Setup
 cp hub/.env.example hub/.env
-# Add your API keys to hub/.env
+# Add your API keys to hub/.env (ANTHROPIC_API_KEY required!)
 
 cp data/projects.example.json data/projects.json
 # Add your projects to data/projects.json
