@@ -1,11 +1,6 @@
 {
     "projects": [
         {
-            "name": "SPHERE",
-            "path": "/Users/admin/projects/personal-site",
-            "github": "https://github.com/Humanji7/personal-site.git"
-        },
-        {
             "name": "VOP",
             "path": "/Users/admin/projects/vob"
         },
@@ -38,6 +33,16 @@
             "name": "sphere-777",
             "path": "/Users/admin/projects/sphere-777",
             "github": "https://github.com/Humanji7/sphere-777"
+        },
+        {
+            "name": "optimi-mac",
+            "path": "/Users/admin/projects/optimi-mac",
+            "github": "https://github.com/Humanji7/optimi-mac"
+        },
+        {
+            "name": "personal-site",
+            "path": "/Users/admin/projects/personal-site",
+            "github": "https://github.com/Humanji7/personal-site"
         }
     ]
 }

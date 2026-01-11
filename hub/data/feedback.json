@@ -10,5 +10,11 @@
     "intent": "напишщи пост про солобадди интерапсный на счет последнешго измененичя",
     "feedback": "correct",
     "timestamp": 1768127666360
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "Давай протестируем то, как ты смекаешь. У нас есть проект PersonalSite, там есть задумка в первой ко",
+    "feedback": "correct",
+    "timestamp": 1768128699735
   }
 ]

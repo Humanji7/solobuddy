@@ -1309,3 +1309,227 @@ body {
 .modal-content.modal-large {
     max-width: 600px;
 }
+
+/* ============================================
+   Project Voice — Mystical Purple Theme
+   ============================================ */
+
+.btn-voice {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-voice:hover {
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Project Voice Modal */
+.project-voice-modal {
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+    max-height: 600px;
+}
+
+.project-voice-header {
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+    margin: calc(var(--spacing-xl) * -1);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.project-voice-header h3 {
+    color: white;
+}
+
+.project-voice-header .modal-close {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.project-voice-header .modal-close:hover {
+    color: white;
+}
+
+.voice-project-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+    margin-bottom: var(--spacing-sm);
+}
+
+.voice-project-selector label {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.voice-project-selector select {
+    flex: 1;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.voice-project-selector select:focus {
+    outline: none;
+    border-color: #7C3AED;
+}
+
+/* Voice Chat Area */
+.voice-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--bg-surface);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.voice-chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.voice-chat-messages::-webkit-scrollbar-thumb {
+    background: #7C3AED;
+    border-radius: 2px;
+}
+
+.voice-placeholder {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    padding: var(--spacing-xl);
+}
+
+/* Voice Chat Bubbles */
+.voice-bubble {
+    max-width: 85%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    animation: fadeSlideIn 0.3s ease;
+}
+
+.voice-bubble.user {
+    align-self: flex-end;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-right: 3px solid #7C3AED;
+}
+
+.voice-bubble.project {
+    align-self: flex-start;
+    background: linear-gradient(135deg,
+            color-mix(in srgb, #7C3AED 10%, var(--bg-card)) 0%,
+            color-mix(in srgb, #5B21B6 15%, var(--bg-surface)) 100%);
+    border: 1px solid color-mix(in srgb, #7C3AED 30%, var(--border-color));
+    border-left: 3px solid #7C3AED;
+}
+
+.voice-bubble p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.voice-bubble.project p {
+    font-style: italic;
+}
+
+/* Voice Chat Form */
+.voice-chat-form {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.voice-chat-form input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.voice-chat-form input:focus {
+    outline: none;
+    border-color: #7C3AED;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+.voice-chat-form input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voice-chat-form input::placeholder {
+    color: var(--text-muted);
+}
+
+.voice-chat-submit {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.voice-chat-submit:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+}
+
+.voice-chat-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Voice typing indicator */
+.voice-typing {
+    display: flex;
+    gap: 4px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    align-self: flex-start;
+}
+
+.voice-typing span {
+    width: 6px;
+    height: 6px;
+    background: #7C3AED;
+    border-radius: 50%;
+    animation: typingBreathe var(--breath-duration) ease-in-out infinite;
+}
+
+.voice-typing span:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.voice-typing span:nth-child(3) {
+    animation-delay: 0.3s;
+}

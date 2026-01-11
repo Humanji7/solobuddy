@@ -3,7 +3,7 @@
    ============================================ */
 
 const axios = require('axios');
-const { buildSystemPrompt, buildContentPrompt, loadPersonaConfig } = require('./prompt-builder');
+const { buildSystemPrompt, buildContentPrompt, loadPersonaConfig, buildProjectVoicePrompt } = require('./prompt-builder');
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
@@ -124,5 +124,44 @@ async function generateContent(options, context) {
     };
 }
 
-module.exports = { sendToClaude, generateContent };
+/**
+ * Send message to Claude as Project Voice — project speaks in first person
+ * @param {Object} project - {name, path, github?}
+ * @param {Array} messages - Chat history
+ * @param {Object} context - {backlogItems}
+ * @returns {Promise<string>} - Response from project persona
+ */
+async function sendProjectVoice(project, messages, context = {}) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
 
+    if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY not configured');
+    }
+
+    const systemPrompt = buildProjectVoicePrompt(project, context);
+
+    const response = await axios.post(
+        CLAUDE_API_URL,
+        {
+            model: CLAUDE_MODEL,
+            max_tokens: 512,
+            temperature: 0.9,  // Higher for more personality
+            system: systemPrompt,
+            messages: messages.map(m => ({
+                role: m.role === 'project' ? 'assistant' : m.role,
+                content: m.content || m.text
+            }))
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            }
+        }
+    );
+
+    return response.data.content[0].text;
+}
+
+module.exports = { sendToClaude, generateContent, sendProjectVoice };
