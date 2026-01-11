@@ -13,6 +13,7 @@ const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
 const { sendToClaude, generateContent, sendProjectVoice } = require('./chat-api');
 const { parseIntent } = require('./intent-parser');
+const soulManager = require('./soul-manager');
 
 const app = express();
 const PORT = 3000;
@@ -762,26 +763,82 @@ app.post('/api/project-voice', async (req, res) => {
             return res.status(404).json({ error: `Project "${projectName}" not found` });
         }
 
-        // 2. Get backlog for context
+        // 2. Load soul (creates if not exists)
+        const soul = await soulManager.loadSoul(project.name, project.path);
+
+        // 3. Get backlog for context
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        // 3. Build messages array
+        // 4. Get git activity for emotional interpretation
+        const { loadProjects, scanProject, getActivityStats } = require('./watcher');
+        let gitActivity = null;
+        try {
+            const scanResult = await scanProject(project.path);
+            gitActivity = getActivityStats(project.name, scanResult);
+        } catch (e) { /* no git activity */ }
+
+        // 5. Build messages array
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // 4. Call Claude with project voice
-        const response = await sendProjectVoice(project, messages, { backlogItems });
+        // 6. Call Claude with project voice + soul + gitActivity
+        const response = await sendProjectVoice(project, messages, {
+            backlogItems,
+            soul,
+            gitActivity
+        });
 
         res.json({
             response,
-            project: project.name
+            project: project.name,
+            hasSoul: !!soul.personality
         });
     } catch (error) {
         console.error('Project Voice error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to get response' });
+    }
+});
+
+// POST /api/project-soul/:name/memory — Save conversation memory
+app.post('/api/project-soul/:name/memory', async (req, res) => {
+    const { name } = req.params;
+    const { summary, emotion } = req.body;
+
+    if (!summary) {
+        return res.status(400).json({ error: 'Summary is required' });
+    }
+
+    try {
+        const soul = await soulManager.addMemory(name, {
+            type: 'conversation',
+            summary,
+            emotion: emotion || null
+        });
+
+        res.json({
+            success: true,
+            memoriesCount: soul.memories.length
+        });
+    } catch (error) {
+        console.error('Error saving memory:', error.message);
+        res.status(500).json({ error: 'Failed to save memory' });
+    }
+});
+
+// GET /api/project-soul/:name — Get project soul
+app.get('/api/project-soul/:name', async (req, res) => {
+    const { name } = req.params;
+
+    try {
+        const soul = await soulManager.loadSoul(name);
+        soul.daysSilent = soulManager.getDaysSilent(soul);
+        res.json(soul);
+    } catch (error) {
+        console.error('Error loading soul:', error.message);
+        res.status(500).json({ error: 'Failed to load soul' });
     }
 });
 
