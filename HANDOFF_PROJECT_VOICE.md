@@ -1,8 +1,8 @@
 # HANDOFF: Project Voice — Голос Изнутри Проекта
 
-> **Статус:** ✅ Phase 2.2 DONE + Critical Bug Fix
+> **Статус:** ✅ Phase 2.4 DONE — Deep Knowledge Extraction
 > **Дата:** 2026-01-11
-> **Следующая сессия:** Phase 2.3 — Styling polish, frontend extraction indicator
+> **Следующая сессия:** Phase 2.5 — Styling polish, frontend extraction indicator
 
 
 ---
@@ -194,30 +194,43 @@ SPHERE Voice: "Я родился из желания создать что-то 
 
 ---
 
-## ✅ Phase 2.2: README LLM Extraction (2026-01-11)
+## ✅ Phase 2.2 → 2.4: Deep Knowledge Extraction (2026-01-11)
 
-### Что сделано
+### Phase 2.2: README LLM Extraction
 
 **Chat API (`hub/chat-api.js`):**
 - `extractPersonalityFromReadme(projectPath, projectName)` — Claude-based extraction
 - Rate-limiting via `extractingProjects` Set
 - Robust JSON parsing (handles markdown-wrapped responses)
-- Token optimization: README truncated to 4000 chars
 
-**Server (`hub/server.js`):**
-- Auto-extraction on first Voice interaction (if `soul.personality === null`)
-- New endpoint: `POST /api/project-soul/:name/extract` — manual re-extraction
-- Response includes `extractionStatus`: 'cached' | 'extracted' | 'no_readme' | 'failed'
+### Phase 2.4: Multi-Source Deep Extraction (NEW)
 
-### Personality Schema
+**New function: `collectProjectDocumentation()`**
+
+Scans multiple sources in priority order:
+1. `docs/*.md` — PHILOSOPHY.md, PRD.md, TRD.md, VISION.md, etc.
+2. `.agent/prompts/*.md` — Claude workflow prompts (max 3)
+3. Root context files — CLAUDE.md, PROJECT.md, SOUL.md, HOOK.md
+4. README.md — fallback
+
+**Expanded Personality Schema:**
 ```javascript
 {
   purpose: "What this project does and why",
   tone: "friendly | technical | playful | professional | artistic | experimental",
   techStack: "Node.js, Three.js, WebGL",
-  keyPhrases: ["distinctive", "phrases", "from", "readme"]
+  keyPhrases: ["distinctive", "phrases", "from", "docs"],
+  philosophy: "Core beliefs and values (from PHILOSOPHY.md)",   // NEW
+  pains: "Known challenges and frustrations",                   // NEW
+  dreams: "Future aspirations and roadmap goals",               // NEW
+  _sources: ["docs/PHILOSOPHY.md", "CLAUDE.md", "README.md"]   // NEW
 }
 ```
+
+**Token Limits:**
+- Each doc file: 2000 chars max
+- Total combined: 8000 chars (up from 4000)
+- Claude extraction: max_tokens 700 (up from 500)
 
 ### Пример работы
 
