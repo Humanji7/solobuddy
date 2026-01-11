@@ -1,60 +1,54 @@
-# Handoff: UI Polish (завершено)
+# Handoff: Public Release Ready
 
-## Сделано (2026-01-11)
+## Статус: Repository готов для open source
 
-### 1. Header кнопки — унификация Amber Ember
-- Voice/Write → solid `--accent-primary` (#D85B2C)
-- GitHub/Local → ghost outline orange
-- Файлы: `hub/styles.css`, `hub/post-editor.css`
-
-### 2. Buddy Messages — компактность + расширяемость
-- Padding уменьшен в 2 раза (48px → 16px)
-- Добавлены колонки с +/- кнопками
-- До 4 плашек (2 по умолчанию, +2 по клику)
-- localStorage сохраняет состояние
-- Файлы: `hub/styles.css`, `hub/index.html`, `hub/app.js`
-
-### 3. Модалки — фикс шрифтов
-- Заголовки и labels: hardcoded #3D3833 (не зависит от dark mode)
-- Файл: `hub/styles.css`
-
-### 4. Data Sections accordion — визуальный вес (NEW)
-- Оранжевая стрелка-индикатор (▸)
-- Тени и hover эффекты
-- Градиентный фон summary
-- Анимация `accordionSlideDown` при открытии
-- Файл: `hub/styles.css`
-
-### 5. Draft Post sidebar — индикатор контента (NEW)
-- Зелёная точка на кнопке Write когда есть черновик
-- Класс `.has-content` с пульсирующей анимацией
-- Файлы: `hub/post-editor.css`, `hub/post-editor.js`
-
-### 6. Buddy messages ротация — 4-slot sync (NEW)
-- `slotIndices[0-3]` для всех 4 слотов
-- Auto-rotation для всех активных слотов
-- Dismiss handlers для слотов 2 и 3
-- Файл: `hub/app.js`
-
-### 7. Dark mode — полная проверка (NEW)
-- Buddy messages: `background: var(--bg-card)`
-- Data Sections: тёмные градиенты для summary
-- Chat container: адаптивный фон и текст
-- Файл: `hub/styles.css`
+Hub готов к использованию. Репозиторий подготовлен для публичного релиза.
 
 ---
 
-## Что можно улучшить (идеи)
+## Последняя сессия: Public Release (2026-01-11)
 
-### Микро-улучшения
-- [ ] **Tooltip для +/- кнопок** — "Добавить ещё одно уведомление"
-- [ ] **Keyboard shortcuts** — например `+` для expand buddy
-- [ ] **Subtle transitions** — при expand/collapse
+### Подготовка к релизу
+- [x] **MIT License** — добавлена
+- [x] **Personal data protection** — archive/, project-souls, projects.json в .gitignore
+- [x] **Example files** — projects.example.json, project-souls/README.md
+- [x] **README enhancement** — features, setup, SOUL Protocol, philosophy
+- [x] **Git push** — репозиторий обновлён
+- [x] **GitHub metadata** — description и topics (ai, build-in-public, developer-tools, productivity, nodejs)
 
-### Возможные фичи
-- [ ] **Drag & drop** для переупорядочивания идей
-- [ ] **Quick actions** на hover для карточек
-- [ ] **Search/filter** в Data Sections
+**Репозиторий:** https://github.com/Humanji7/solobuddy
+
+---
+
+## История: UI Polish (2026-01-11)
+
+### Приоритет 1
+- **Data Sections accordion** — визуальный вес (тени, оранжевая стрелка, градиенты, анимация)
+- **Draft Post sidebar** — индикатор контента (зелёная точка на Write)
+
+### Приоритет 2
+- **Buddy messages ротация** — синхронизирована с 4 слотами
+- **Dark mode** — полная проверка и дополнение стилей
+
+### Ранее
+- Header кнопки — унификация Amber Ember
+- Buddy Messages — компактность + расширяемость до 4 плашек
+- Модалки — фикс шрифтов для dark mode
+
+---
+
+## Следующие шаги
+
+### Launch Strategy
+- [ ] Telegram пост (RU, для друзей)
+- [ ] Twitter thread (EN, глобальная аудитория)
+- [ ] Dev.to статья про SOUL Protocol
+
+### Roadmap (опционально)
+- [ ] Mobile responsive polish
+- [ ] Accessibility audit (ARIA labels)
+- [ ] Performance optimization (lazy load)
+- [ ] Drag & drop для идей в backlog
 
 ---
 
@@ -67,9 +61,11 @@ cd hub && npm start
 
 ---
 
-## Коммиты сессии
+## Последние коммиты
 
-1. `e9944b8` — style: Amber Ember palette + Airbnb spacing + WCAG AA readability
-2. `d618875` — feat(hub): Header unification + compact expandable buddy messages
-3. `c9af7ac` — docs: Add UI polish handoff for continuation
-4. (pending) — feat(hub): Data Sections accordion + 4-slot buddy rotation + dark mode polish
+```
+959368c chore: prepare for public release
+648eb5a feat(hub): Data Sections accordion + 4-slot buddy rotation + dark mode
+c9af7ac docs: Add UI polish handoff for continuation
+d618875 feat(hub): Header unification + compact expandable buddy messages
+```
