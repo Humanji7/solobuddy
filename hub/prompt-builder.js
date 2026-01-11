@@ -12,14 +12,39 @@ const path = require('path');
  * @param {Object} options - Options like mode, template, persona config
  * @returns {string} - Complete system prompt
  */
+/**
+ * Strict project matching: exact name OR folder name match
+ * Prevents partial matches like "sphere" matching "atmosphere"
+ */
+function matchProject(projectName, focusProject) {
+    if (!focusProject) return true;
+    const focus = focusProject.toLowerCase().trim();
+    const name = projectName.toLowerCase().trim();
+    // Exact match OR folder name match (last segment)
+    return name === focus || name.split('/').pop() === focus || name.split('-').pop() === focus;
+}
+
 function buildSystemPrompt(context, options = {}) {
     const { projects, backlogItems, gitActivity, sessionLog, drafts, buddyMessage } = context;
     const { mode = 'chat', template = null, focusProject = null } = options;
 
     // ============================================
+    // Project Isolation Header (when focused)
+    // ============================================
+    let prompt = '';
+    if (focusProject && mode === 'content') {
+        prompt += `⚠️ CRITICAL: You are writing ONLY about ${focusProject.toUpperCase()}.
+DO NOT mention or reference any other projects.
+All context below is ONLY from this project.
+If asked about other projects, politely redirect to ${focusProject}.
+
+`;
+    }
+
+    // ============================================
     // Core Personality
     // ============================================
-    let prompt = `# You are SoloBuddy
+    prompt += `# You are SoloBuddy
 
 ## Who You Are
 Ты — живой companion, не инструмент. Тёплый друг у камина, который помнит что происходило вчера и позавчера. Говоришь на смеси English и Russian естественно, как это делает сам пользователь.
@@ -62,10 +87,13 @@ function buildSystemPrompt(context, options = {}) {
     // ============================================
     if (gitActivity && gitActivity.length > 0) {
         const relevantActivity = focusProject
-            ? gitActivity.filter(p => p.name.toLowerCase().includes(focusProject.toLowerCase()))
+            ? gitActivity.filter(p => matchProject(p.name, focusProject))
             : gitActivity;
 
         if (relevantActivity.length > 0) {
+            if (focusProject && mode === 'content') {
+                prompt += `=== CONTEXT FOR: ${focusProject.toUpperCase()} ===\n`;
+            }
             prompt += `## Recent Work Patterns (Git Activity)\n`;
             relevantActivity.forEach(proj => {
                 if (proj.commitsThisWeek > 0 || proj.daysSilent !== null) {
@@ -93,14 +121,20 @@ function buildSystemPrompt(context, options = {}) {
     }
 
     // ============================================
-    // Projects (basic info)
+    // Projects (filtered when focusProject set)
     // ============================================
     if (projects && projects.length > 0) {
-        prompt += `## Projects I Know About\n`;
-        projects.slice(0, 8).forEach(p => {
-            prompt += `- **${p.name}**${p.github ? ` (GitHub)` : ' (local only)'}\n`;
-        });
-        prompt += `\n`;
+        const relevantProjects = focusProject
+            ? projects.filter(p => matchProject(p.name, focusProject))
+            : projects.slice(0, 8);
+
+        if (relevantProjects.length > 0) {
+            prompt += `## Projects I Know About\n`;
+            relevantProjects.forEach(p => {
+                prompt += `- **${p.name}**${p.github ? ` (GitHub)` : ' (local only)'}\n`;
+            });
+            prompt += `\n`;
+        }
     }
 
     // ============================================
@@ -119,7 +153,7 @@ function buildSystemPrompt(context, options = {}) {
     // ============================================
     if (backlogItems && backlogItems.length > 0) {
         const relevantItems = focusProject
-            ? backlogItems.filter(i => i.project?.toLowerCase().includes(focusProject.toLowerCase()))
+            ? backlogItems.filter(i => i.project && matchProject(i.project, focusProject))
             : backlogItems;
 
         const highPriority = relevantItems.filter(i => i.priority === 'high');
@@ -144,15 +178,21 @@ function buildSystemPrompt(context, options = {}) {
     }
 
     // ============================================
-    // Drafts in Progress
+    // Drafts in Progress (filtered when focusProject set)
     // ============================================
     if (drafts && drafts.length > 0) {
-        prompt += `## Drafts in Progress\n`;
-        drafts.forEach(draft => {
-            const statusEmoji = draft.status === 'ready' ? '✅' : draft.status === 'in-progress' ? '🔧' : '📝';
-            prompt += `- ${statusEmoji} ${draft.title} (${draft.status})\n`;
-        });
-        prompt += `\n`;
+        const relevantDrafts = focusProject
+            ? drafts.filter(d => d.project && matchProject(d.project, focusProject))
+            : drafts;
+
+        if (relevantDrafts.length > 0) {
+            prompt += `## Drafts in Progress\n`;
+            relevantDrafts.forEach(draft => {
+                const statusEmoji = draft.status === 'ready' ? '✅' : draft.status === 'in-progress' ? '🔧' : '📝';
+                prompt += `- ${statusEmoji} ${draft.title} (${draft.status})\n`;
+            });
+            prompt += `\n`;
+        }
     }
 
     // ============================================
