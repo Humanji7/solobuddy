@@ -1335,9 +1335,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (voiceProjectSelect) {
-        voiceProjectSelect.addEventListener('change', () => {
+        voiceProjectSelect.addEventListener('change', async () => {
             const selected = voiceProjectSelect.value;
             if (selected) {
+                // Phase 2.7: Check if SOUL onboarding is needed
+                const needsOnboarding = await checkSoulOnboarding(selected);
+
+                if (needsOnboarding) {
+                    // Onboarding wizard will handle the rest
+                    // Reset UI state
+                    voiceChatMessages.innerHTML = '<div class="voice-placeholder">Complete SOUL onboarding first...</div>';
+                    voiceChatInput.disabled = true;
+                    voiceChatSubmit.disabled = true;
+                    return;
+                }
+
+                // Normal flow - start voice chat
                 currentVoiceProject = selected;
                 voiceChatMessages.innerHTML = ''; // Clear placeholder
                 voiceChatInput.disabled = false;
@@ -1355,6 +1368,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Make startProjectVoiceChat available globally for onboarding callback
+    window.startProjectVoiceChat = function (projectName) {
+        if (voiceProjectSelect) {
+            voiceProjectSelect.value = projectName;
+        }
+        currentVoiceProject = projectName;
+        voiceChatMessages.innerHTML = '';
+        voiceChatInput.disabled = false;
+        voiceChatSubmit.disabled = false;
+        voiceChatInput.focus();
+        voiceChatInput.placeholder = `Talk to ${projectName}...`;
+        renderVoiceMessage('project', `Привет. Я — ${projectName}. Теперь у меня есть душа! О чём поговорим?`);
+    };
 
     if (voiceChatForm) {
         voiceChatForm.addEventListener('submit', (e) => {

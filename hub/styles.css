@@ -1,6 +1,7 @@
 /* ============================================
-   SoloBuddy Hub — "Warm Hearth" Theme
-   A quiet companion, not a dashboard.
+   SoloBuddy Hub — "Bioluminescent Jellyfish" Theme
+   Living organism, not a dashboard.
+   Phase 3: Warm Hearth + Jellyfish Soul
    ============================================ */
 
 :root {
@@ -44,6 +45,14 @@
 
     /* Breathing animation */
     --breath-duration: 4s;
+
+    /* 🪼 Jellyfish Soul - Bioluminescence */
+    --glow-primary: rgba(232, 184, 122, 0.4);
+    --glow-secondary: rgba(196, 120, 92, 0.35);
+    --glow-tertiary: rgba(212, 168, 106, 0.25);
+    --shimmer-duration: 18s;
+    --aurora-duration: 30s;
+    --inner-glow-intensity: 0.12;
 }
 
 /* Dark Mode - Adaptive (consolidated) */
@@ -68,6 +77,11 @@
         --status-success: #8AAE7F;
         --status-warning: #D4A86A;
         --status-high: #D4886C;
+
+        /* 🪼 Jellyfish Soul - Dark mode bioluminescence (deeper glow) */
+        --glow-primary: rgba(212, 136, 108, 0.35);
+        --glow-secondary: rgba(212, 168, 106, 0.3);
+        --glow-tertiary: rgba(224, 152, 128, 0.2);
     }
 
     .badge {
@@ -77,6 +91,16 @@
 
     .modal {
         background: rgba(26, 24, 22, 0.7);
+    }
+
+    /* 🪼 Dark mode deeper inner glow */
+    .card,
+    .buddy-message,
+    .chat-container {
+        box-shadow:
+            inset 0 0 40px rgba(212, 168, 106, 0.08),
+            0 2px 8px rgba(0, 0, 0, 0.15),
+            0 8px 24px rgba(0, 0, 0, 0.2);
     }
 }
 
@@ -88,12 +112,114 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg-primary);
+    background:
+        radial-gradient(ellipse 90% 70% at 10% 15%, var(--glow-primary) 0%, transparent 50%),
+        radial-gradient(ellipse 80% 60% at 90% 80%, var(--glow-secondary) 0%, transparent 45%),
+        radial-gradient(ellipse 60% 50% at 50% 45%, var(--glow-tertiary) 0%, transparent 55%),
+        var(--bg-primary);
+    background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.7;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
+    animation:
+        blobShift 25s ease-in-out infinite,
+        auroraColorShift var(--aurora-duration) ease-in-out infinite;
+}
+
+@keyframes blobShift {
+
+    0%,
+    100% {
+        background-position: 0% 0%, 100% 100%, 50% 50%;
+    }
+
+    33% {
+        background-position: 10% 20%, 90% 80%, 60% 40%;
+    }
+
+    66% {
+        background-position: 5% 10%, 95% 90%, 40% 60%;
+    }
+}
+
+/* 🪼 Aurora Color Shift — Living bioluminescence */
+@keyframes auroraColorShift {
+
+    0%,
+    100% {
+        --glow-primary: rgba(232, 184, 122, 0.4);
+        --glow-secondary: rgba(196, 120, 92, 0.35);
+        --glow-tertiary: rgba(212, 168, 106, 0.25);
+    }
+
+    25% {
+        --glow-primary: rgba(212, 168, 106, 0.45);
+        --glow-secondary: rgba(232, 184, 122, 0.38);
+        --glow-tertiary: rgba(196, 120, 92, 0.28);
+    }
+
+    50% {
+        --glow-primary: rgba(196, 120, 92, 0.42);
+        --glow-secondary: rgba(212, 168, 106, 0.4);
+        --glow-tertiary: rgba(232, 184, 122, 0.3);
+    }
+
+    75% {
+        --glow-primary: rgba(220, 160, 100, 0.44);
+        --glow-secondary: rgba(200, 140, 80, 0.36);
+        --glow-tertiary: rgba(180, 130, 90, 0.26);
+    }
+}
+
+/* 🪼 Phosphorescent Shimmer — Slow surface glow */
+@keyframes phosphorShimmer {
+
+    0%,
+    100% {
+        background-position: -200% 0;
+    }
+
+    50% {
+        background-position: 200% 0;
+    }
+}
+
+/* 🪼 Inner Glow Pulse — Breathing from within */
+@keyframes innerGlowPulse {
+
+    0%,
+    100% {
+        box-shadow:
+            inset 0 0 30px rgba(232, 184, 122, 0.08),
+            0 2px 8px rgba(61, 56, 51, 0.06),
+            0 8px 24px rgba(61, 56, 51, 0.08);
+    }
+
+    50% {
+        box-shadow:
+            inset 0 0 50px rgba(232, 184, 122, 0.14),
+            0 4px 16px rgba(61, 56, 51, 0.08),
+            0 12px 32px rgba(61, 56, 51, 0.1);
+    }
+}
+
+/* 🪼 Breathing Glow — Radiant pulse for avatars */
+@keyframes breatheGlow {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 4px rgba(232, 184, 122, 0.3));
+    }
+
+    50% {
+        opacity: 0.85;
+        transform: scale(1.03);
+        filter: drop-shadow(0 0 10px rgba(232, 184, 122, 0.5));
+    }
 }
 
 /* ============================================
@@ -136,14 +262,28 @@ body {
     align-items: flex-start;
     gap: var(--spacing-sm);
     padding: var(--spacing-md);
-    /* Tinted background using accent */
+    /* 🪼 Jellyfish Glassmorphism with inner glow */
     background: linear-gradient(135deg,
-            color-mix(in srgb, var(--buddy-accent, var(--accent-soft)) 8%, var(--bg-card)) 0%,
-            color-mix(in srgb, var(--buddy-accent, var(--accent-soft)) 15%, var(--bg-surface)) 100%);
-    border: 1px solid color-mix(in srgb, var(--buddy-accent, var(--accent-soft)) 30%, var(--border-color));
+            rgba(255, 252, 248, 0.9) 0%,
+            rgba(245, 240, 232, 0.85) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(232, 226, 217, 0.5);
     border-radius: var(--radius-md);
-    animation: fadeSlideIn 0.5s ease;
-    transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+    box-shadow:
+        inset 0 0 25px rgba(232, 184, 122, 0.06),
+        0 2px 8px rgba(61, 56, 51, 0.06),
+        0 8px 24px rgba(61, 56, 51, 0.08);
+    animation: fadeSlideIn 0.5s ease, innerGlowPulse 6s ease-in-out infinite;
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.buddy-message:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        inset 0 0 40px rgba(232, 184, 122, 0.1),
+        0 4px 12px rgba(61, 56, 51, 0.08),
+        0 12px 32px rgba(61, 56, 51, 0.1);
 }
 
 .buddy-message.buddy-left {
@@ -175,7 +315,7 @@ body {
 
 .buddy-avatar {
     font-size: 1.25rem;
-    animation: breathe var(--breath-duration) ease-in-out infinite;
+    animation: breatheGlow var(--breath-duration) ease-in-out infinite;
     flex-shrink: 0;
 }
 
@@ -286,10 +426,15 @@ body {
 
 .chat-container {
     margin-bottom: var(--spacing-lg);
-    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-card) 100%);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 252, 248, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 226, 217, 0.5);
     border-radius: var(--radius-lg);
     padding: var(--spacing-md);
+    box-shadow:
+        0 2px 8px rgba(61, 56, 51, 0.04),
+        0 8px 24px rgba(61, 56, 51, 0.06);
 }
 
 .chat-messages {
@@ -318,18 +463,24 @@ body {
 
 .chat-bubble.buddy {
     align-self: flex-start;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 252, 248, 0.95);
+    border: 1px solid rgba(232, 184, 122, 0.3);
     border-left: 3px solid var(--accent-soft);
     border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px;
+    box-shadow:
+        0 2px 6px rgba(61, 56, 51, 0.05),
+        0 4px 12px rgba(61, 56, 51, 0.04);
 }
 
 .chat-bubble.user {
     align-self: flex-end;
-    background: var(--bg-hover);
-    border: 1px solid var(--border-color);
+    background: rgba(240, 235, 227, 0.9);
+    border: 1px solid rgba(196, 120, 92, 0.25);
     border-right: 3px solid var(--accent-primary);
     border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg);
+    box-shadow:
+        0 2px 6px rgba(61, 56, 51, 0.05),
+        0 4px 12px rgba(61, 56, 51, 0.04);
 }
 
 .chat-bubble p {
@@ -431,7 +582,7 @@ body {
 
 .logo-icon {
     font-size: 1.75rem;
-    animation: breathe var(--breath-duration) ease-in-out infinite;
+    animation: breatheGlow var(--breath-duration) ease-in-out infinite;
 }
 
 @keyframes breathe {
@@ -468,18 +619,21 @@ body {
     height: 8px;
     background: var(--status-success);
     border-radius: 50%;
-    animation: pulse-soft var(--breath-duration) ease-in-out infinite;
+    animation: statusGlow var(--breath-duration) ease-in-out infinite;
 }
 
-@keyframes pulse-soft {
+/* 🪼 Status dot bioluminescent glow */
+@keyframes statusGlow {
 
     0%,
     100% {
         opacity: 1;
+        box-shadow: 0 0 4px rgba(122, 158, 111, 0.4);
     }
 
     50% {
-        opacity: 0.5;
+        opacity: 0.85;
+        box-shadow: 0 0 12px rgba(122, 158, 111, 0.7);
     }
 }
 
@@ -510,19 +664,58 @@ body {
 }
 
 /* ============================================
-   Cards - Soft and warm
+   Cards - 🪼 Jellyfish Soul (Inner Glow + Shimmer)
    ============================================ */
 
 .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    position: relative;
+    background: rgba(255, 252, 248, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 226, 217, 0.6);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    transition: border-color var(--transition-normal);
+    box-shadow:
+        inset 0 0 35px rgba(232, 184, 122, 0.06),
+        0 1px 3px rgba(61, 56, 51, 0.03),
+        0 4px 12px rgba(61, 56, 51, 0.05),
+        0 12px 28px rgba(61, 56, 51, 0.08);
+    transition:
+        transform var(--transition-normal),
+        box-shadow var(--transition-normal),
+        border-color var(--transition-normal);
+    animation: innerGlowPulse 8s ease-in-out infinite;
+}
+
+/* 🪼 Phosphorescent Shimmer overlay */
+.card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(232, 184, 122, 0.04) 25%,
+            rgba(255, 252, 248, 0.08) 50%,
+            rgba(232, 184, 122, 0.04) 75%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: phosphorShimmer var(--shimmer-duration) ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
 }
 
 .card:hover {
     border-color: var(--accent-soft);
+    transform: translateY(-3px);
+    box-shadow:
+        inset 0 0 50px rgba(232, 184, 122, 0.1),
+        0 2px 6px rgba(61, 56, 51, 0.04),
+        0 8px 20px rgba(61, 56, 51, 0.07),
+        0 20px 40px rgba(61, 56, 51, 0.1);
+}
+
+.card:hover::before {
+    animation-duration: calc(var(--shimmer-duration) / 2);
 }
 
 .card-header {
@@ -698,12 +891,18 @@ body {
 }
 
 .modal-content {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 252, 248, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(232, 226, 217, 0.5);
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 440px;
     padding: var(--spacing-xl);
+    box-shadow:
+        0 4px 12px rgba(61, 56, 51, 0.08),
+        0 16px 40px rgba(61, 56, 51, 0.12),
+        0 32px 64px rgba(61, 56, 51, 0.08);
     animation: fadeIn 0.3s ease;
 }
 
@@ -1342,6 +1541,12 @@ body {
     flex-direction: column;
     height: 70vh;
     max-height: 600px;
+    background: rgba(255, 252, 248, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow:
+        0 8px 24px rgba(124, 58, 237, 0.1),
+        0 24px 48px rgba(61, 56, 51, 0.15);
 }
 
 .project-voice-header {

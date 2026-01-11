@@ -911,6 +911,115 @@ app.post('/api/project-soul/:name/extract', async (req, res) => {
     }
 });
 
+// GET /api/project-sensitivity/:name — Check if project needs SOUL onboarding (Phase 2.7)
+app.get('/api/project-sensitivity/:name', async (req, res) => {
+    const { name } = req.params;
+    const { getSensitivity } = require('./sensitivity-detector');
+
+    try {
+        // Find project to get path
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        const data = await fs.readFile(projectsPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        const projects = parsed.projects || parsed;
+
+        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+        if (!project) {
+            return res.status(404).json({ error: `Project "${name}" not found` });
+        }
+
+        if (!project.path) {
+            return res.status(400).json({ error: `Project "${name}" has no path configured` });
+        }
+
+        // Also check if soul already has onboarding completed
+        const hasOnboarding = await soulManager.hasCompletedOnboarding(project.name);
+
+        const sensitivity = await getSensitivity(project.name, project.path);
+
+        // Override recommendation if onboarding already completed
+        if (hasOnboarding) {
+            sensitivity.recommendation = 'use_existing';
+            sensitivity.onboardingCompleted = true;
+        }
+
+        res.json(sensitivity);
+    } catch (error) {
+        console.error('Error checking sensitivity:', error.message);
+        res.status(500).json({ error: 'Failed to check sensitivity' });
+    }
+});
+
+// POST /api/project-soul/:name/generate — Generate SOUL from onboarding wizard selections (Phase 2.7)
+app.post('/api/project-soul/:name/generate', async (req, res) => {
+    const { name } = req.params;
+    const { selections, saveToRepo } = req.body;
+
+    if (!selections) {
+        return res.status(400).json({ error: 'Selections are required' });
+    }
+
+    try {
+        // Find project to get path
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        const data = await fs.readFile(projectsPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        const projects = parsed.projects || parsed;
+
+        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+        if (!project) {
+            return res.status(404).json({ error: `Project "${name}" not found` });
+        }
+
+        // Import chat-api for generateSoulFromSelections
+        const { generateSoulFromSelections } = require('./chat-api');
+
+        console.log(`[Soul] Generating SOUL for ${project.name} from onboarding selections...`);
+
+        // Generate SOUL.md content using LLM
+        const result = await generateSoulFromSelections(project.name, selections, project.path);
+
+        if (!result.success) {
+            return res.status(500).json({ error: result.error || 'Failed to generate SOUL' });
+        }
+
+        // Save to soul-manager
+        await soulManager.saveSoulFromOnboarding(
+            project.name,
+            selections,
+            result.soulMd,
+            result.personality
+        );
+
+        console.log(`[Soul] ✅ SOUL generated and saved for ${project.name}`);
+
+        // Optionally save SOUL.md to project repo
+        if (saveToRepo && project.path) {
+            try {
+                const soulPath = path.join(project.path, 'SOUL.md');
+                await fs.writeFile(soulPath, result.soulMd, 'utf-8');
+                console.log(`[Soul] ✅ SOUL.md written to ${project.path}`);
+                result.savedToRepo = true;
+            } catch (e) {
+                console.error(`[Soul] Could not write SOUL.md to repo:`, e.message);
+                result.savedToRepo = false;
+            }
+        }
+
+        res.json({
+            success: true,
+            soulMd: result.soulMd,
+            personality: result.personality,
+            savedToRepo: result.savedToRepo || false
+        });
+    } catch (error) {
+        console.error('Error generating SOUL:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to generate SOUL' });
+    }
+});
+
 // POST /api/content/generate — Generate BIP content with personas and templates (Phase 4.1)
 app.post('/api/content/generate', async (req, res) => {
     const { prompt, template, persona, project } = req.body;

@@ -144,6 +144,61 @@ async function listSouls() {
     }
 }
 
+/**
+ * Save soul from onboarding wizard
+ * @param {string} projectName 
+ * @param {Object} selections - User's wizard selections
+ * @param {string} generatedMd - Generated SOUL.md content
+ * @param {Object} personality - Parsed personality object
+ * @returns {Object} Updated soul
+ */
+async function saveSoulFromOnboarding(projectName, selections, generatedMd, personality) {
+    const soul = await loadSoul(projectName);
+
+    soul.personality = {
+        ...personality,
+        _source: 'onboarding',
+        _selections: selections,
+        createdAt: new Date().toISOString()
+    };
+
+    soul.soulMdContent = generatedMd;
+    soul.onboardingCompleted = true;
+    soul.lastInteraction = new Date().toISOString();
+
+    await saveSoul(projectName, soul);
+    return soul;
+}
+
+/**
+ * Get the source of soul's personality
+ * @param {string} projectName 
+ * @returns {Promise<'onboarding' | 'extraction' | 'manual' | 'none'>}
+ */
+async function getSoulSource(projectName) {
+    try {
+        const soul = await loadSoul(projectName);
+        if (!soul.personality) return 'none';
+        return soul.personality._source || 'extraction';
+    } catch {
+        return 'none';
+    }
+}
+
+/**
+ * Check if soul has completed onboarding
+ * @param {string} projectName 
+ * @returns {Promise<boolean>}
+ */
+async function hasCompletedOnboarding(projectName) {
+    try {
+        const soul = await loadSoul(projectName);
+        return soul.onboardingCompleted === true;
+    } catch {
+        return false;
+    }
+}
+
 module.exports = {
     loadSoul,
     saveSoul,
@@ -151,5 +206,8 @@ module.exports = {
     updatePersonality,
     getDaysSilent,
     listSouls,
+    saveSoulFromOnboarding,
+    getSoulSource,
+    hasCompletedOnboarding,
     SOULS_DIR
 };
