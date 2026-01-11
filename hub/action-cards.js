@@ -4,33 +4,38 @@
    ============================================ */
 
 /**
- * Initialize keyboard navigation for Action Card (Nielsen: Flexibility/Efficiency)
- * - Enter = confirm primary action
- * - Esc = dismiss card
- * - Tab = cycle through focusable elements (browser native)
+ * Initialize card with keyboard nav and dismiss handler
  * @param {HTMLElement} card - The action card element
+ * @param {Function} onDismiss - Optional callback on dismiss
  */
-function initKeyboardNav(card) {
+function initCard(card, onDismiss) {
     // Make card focusable
     card.setAttribute('tabindex', '0');
 
+    // Keyboard navigation
     card.addEventListener('keydown', (e) => {
-        // Esc = dismiss
         if (e.key === 'Escape') {
             e.preventDefault();
             card.querySelector('.card-dismiss')?.click();
         }
-
-        // Enter = confirm (but not when on select/button to allow their native behavior)
         if (e.key === 'Enter' && !e.target.matches('select, button')) {
             e.preventDefault();
             card.querySelector('.btn-primary')?.click();
         }
     });
 
-    // Auto-focus card on render for immediate keyboard use
+    // Dismiss button
+    card.querySelector('.card-dismiss')?.addEventListener('click', () => {
+        card.remove();
+        onDismiss?.();
+    });
+
+    // Auto-focus
     requestAnimationFrame(() => card.focus());
 }
+
+// Backward compatibility alias
+const initKeyboardNav = initCard;
 
 /**
  * Render an Action Card based on type
@@ -38,26 +43,23 @@ function initKeyboardNav(card) {
  * @param {Object} options - { onAction, onDismiss, onFeedback }
  * @returns {HTMLElement}
  */
+const CARD_RENDERERS = {
+    AddIdeaCard: renderAddIdeaCard,
+    FindIdeaCard: renderFindIdeaCard,
+    ActivityCard: renderActivityCard,
+    ChangePriorityCard: renderChangePriorityCard,
+    ContentGeneratorCard: renderContentGeneratorCard
+};
+
 function renderActionCard(actionCard, options = {}) {
     if (!actionCard) return null;
 
-    const { type } = actionCard;
-
-    switch (type) {
-        case 'AddIdeaCard':
-            return renderAddIdeaCard(actionCard, options);
-        case 'FindIdeaCard':
-            return renderFindIdeaCard(actionCard, options);
-        case 'ActivityCard':
-            return renderActivityCard(actionCard, options);
-        case 'ChangePriorityCard':
-            return renderChangePriorityCard(actionCard, options);
-        case 'ContentGeneratorCard':
-            return renderContentGeneratorCard(actionCard, options);
-        default:
-            console.warn('Unknown action card type:', type);
-            return null;
+    const renderer = CARD_RENDERERS[actionCard.type];
+    if (!renderer) {
+        console.warn('Unknown action card type:', actionCard.type);
+        return null;
     }
+    return renderer(actionCard, options);
 }
 
 /**
