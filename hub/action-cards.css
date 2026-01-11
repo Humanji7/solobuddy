@@ -749,3 +749,76 @@
         max-width: none;
     }
 }
+
+/* ============================================
+   ContentGeneratorCard (Phase 4.1)
+   ============================================ */
+.action-card.content-generator .card-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.action-card.content-generator .preview-label {
+    color: rgba(255, 255, 255, 0.5);
+    margin-right: 8px;
+}
+
+.action-card.content-generator .preview-text {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.action-card.content-generator .card-project {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-card.content-generator .project-label {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.action-card.content-generator .project-name {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+.action-card.content-generator .template-select,
+.action-card.content-generator .persona-select {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Progress bar */
+.generation-progress {
+    margin-top: 12px;
+    text-align: center;
+}
+
+.generation-progress .progress-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.generation-progress .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.generation-progress .progress-text {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+}
