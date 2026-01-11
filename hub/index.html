@@ -26,6 +26,7 @@
                 </div>
                 <button id="ai-drafts-btn" class="btn-ai-drafts">📝 <span class="drafts-count"
                         id="drafts-count">0</span></button>
+                <button id="voice-btn" class="btn-voice">🌀 Voice</button>
                 <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
                 <button id="local-connect-btn" class="btn-local">📁 Add Local</button>
                 <button id="editor-toggle-btn" class="btn-editor-toggle">✎ Write</button>
@@ -192,6 +193,29 @@
                 <div class="modal-footer">
                     <span class="drafts-hint">💡 Драфты сохраняются автоматически при генерации</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Project Voice Modal -->
+        <div class="modal" id="project-voice-modal">
+            <div class="modal-content modal-large project-voice-modal">
+                <div class="modal-header project-voice-header">
+                    <h3>🌀 Project Voice</h3>
+                    <button class="modal-close" id="voice-modal-close">&times;</button>
+                </div>
+                <div class="voice-project-selector">
+                    <label for="voice-project-select">Talk to:</label>
+                    <select id="voice-project-select">
+                        <option value="">Select a project...</option>
+                    </select>
+                </div>
+                <div class="voice-chat-messages" id="voice-chat-messages">
+                    <div class="voice-placeholder">Choose a project to start talking...</div>
+                </div>
+                <form class="voice-chat-form" id="voice-chat-form">
+                    <input type="text" id="voice-chat-input" placeholder="Talk to your project..." disabled>
+                    <button type="submit" class="voice-chat-submit" disabled>→</button>
+                </form>
             </div>
         </div>
 

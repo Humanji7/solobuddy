@@ -11,7 +11,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
-const { sendToClaude, generateContent } = require('./chat-api');
+const { sendToClaude, generateContent, sendProjectVoice } = require('./chat-api');
 const { parseIntent } = require('./intent-parser');
 
 const app = express();
@@ -734,6 +734,57 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// POST /api/project-voice — Chat with project as first-person persona
+app.post('/api/project-voice', async (req, res) => {
+    const { projectName, message, history = [] } = req.body;
+
+    if (!projectName || !message) {
+        return res.status(400).json({ error: 'projectName and message are required' });
+    }
+
+    try {
+        // 1. Find project
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        let projects = [];
+        try {
+            const data = await fs.readFile(projectsPath, 'utf-8');
+            const parsed = JSON.parse(data);
+            projects = parsed.projects || parsed;
+        } catch (e) {
+            return res.status(404).json({ error: 'No projects configured' });
+        }
+
+        const project = projects.find(p =>
+            p.name.toLowerCase() === projectName.toLowerCase()
+        );
+
+        if (!project) {
+            return res.status(404).json({ error: `Project "${projectName}" not found` });
+        }
+
+        // 2. Get backlog for context
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        // 3. Build messages array
+        const messages = [
+            ...history,
+            { role: 'user', content: message }
+        ];
+
+        // 4. Call Claude with project voice
+        const response = await sendProjectVoice(project, messages, { backlogItems });
+
+        res.json({
+            response,
+            project: project.name
+        });
+    } catch (error) {
+        console.error('Project Voice error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get response' });
+    }
+});
+
 // POST /api/content/generate — Generate BIP content with personas and templates (Phase 4.1)
 app.post('/api/content/generate', async (req, res) => {
     const { prompt, template, persona, project } = req.body;
@@ -1052,6 +1103,20 @@ app.post('/api/local/connect', async (req, res) => {
     } catch (error) {
         console.error('Error connecting local projects:', error.message);
         res.status(500).json({ error: 'Failed to connect projects' });
+    }
+});
+
+// GET /api/projects — Get all connected projects
+app.get('/api/projects', async (req, res) => {
+    try {
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        const data = await fs.readFile(projectsPath, 'utf-8');
+        const parsed = JSON.parse(data);
+        const projects = parsed.projects || parsed;
+        res.json(projects);
+    } catch (error) {
+        console.error('Error loading projects:', error.message);
+        res.json([]); // Return empty array if no projects
     }
 });
 

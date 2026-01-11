@@ -1174,4 +1174,203 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof showFirstRunTooltip === 'function') {
         setTimeout(showFirstRunTooltip, 2000); // Delay to not overwhelm
     }
+
+    // ============================================
+    // Project Voice Modal — Talk to your project
+    // ============================================
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceModal = document.getElementById('project-voice-modal');
+    const voiceModalClose = document.getElementById('voice-modal-close');
+    const voiceProjectSelect = document.getElementById('voice-project-select');
+    const voiceChatMessages = document.getElementById('voice-chat-messages');
+    const voiceChatForm = document.getElementById('voice-chat-form');
+    const voiceChatInput = document.getElementById('voice-chat-input');
+    const voiceChatSubmit = voiceChatForm?.querySelector('.voice-chat-submit');
+
+    let voiceChatHistory = [];
+    let currentVoiceProject = null;
+
+    async function loadProjectsForVoice() {
+        try {
+            const response = await fetch('/api/github/repos');
+            // If not authenticated, try local projects list
+            if (!response.ok) {
+                // Fallback: read from internal projects list
+                const fallbackResponse = await fetch('/api/buddy-message');
+                const buddyData = await fallbackResponse.json();
+                // Extract project names from buddy message context
+                return [];
+            }
+            return await response.json();
+        } catch (e) {
+            return [];
+        }
+    }
+
+    async function populateVoiceProjectDropdown() {
+        // Load projects dynamically from /api/projects
+        try {
+            const response = await fetch('/api/projects');
+            const projects = await response.json();
+
+            voiceProjectSelect.innerHTML = '<option value="">Select a project...</option>';
+
+            if (projects.length === 0) {
+                voiceProjectSelect.innerHTML = '<option value="">No projects connected</option>';
+                return;
+            }
+
+            projects.forEach(proj => {
+                const option = document.createElement('option');
+                option.value = proj.name;
+                option.textContent = proj.name;
+                voiceProjectSelect.appendChild(option);
+            });
+        } catch (e) {
+            console.error('Error loading projects for voice:', e);
+            voiceProjectSelect.innerHTML = '<option value="">Error loading projects</option>';
+        }
+    }
+
+    function openVoiceModal() {
+        voiceModal.classList.add('active');
+        populateVoiceProjectDropdown();
+        voiceChatHistory = [];
+        currentVoiceProject = null;
+        voiceChatMessages.innerHTML = '<div class="voice-placeholder">Choose a project to start talking...</div>';
+        voiceChatInput.disabled = true;
+        voiceChatSubmit.disabled = true;
+    }
+
+    function closeVoiceModal() {
+        voiceModal.classList.remove('active');
+        voiceChatHistory = [];
+        currentVoiceProject = null;
+    }
+
+    function renderVoiceMessage(role, text) {
+        const bubble = document.createElement('div');
+        bubble.className = `voice-bubble ${role}`;
+        const p = document.createElement('p');
+        p.innerHTML = text.replace(/\n/g, '<br>');
+        bubble.appendChild(p);
+        voiceChatMessages.appendChild(bubble);
+        voiceChatMessages.scrollTop = voiceChatMessages.scrollHeight;
+    }
+
+    function showVoiceTyping() {
+        const indicator = document.createElement('div');
+        indicator.className = 'voice-typing';
+        indicator.id = 'voice-typing';
+        indicator.innerHTML = '<span></span><span></span><span></span>';
+        voiceChatMessages.appendChild(indicator);
+        voiceChatMessages.scrollTop = voiceChatMessages.scrollHeight;
+    }
+
+    function hideVoiceTyping() {
+        const indicator = document.getElementById('voice-typing');
+        if (indicator) indicator.remove();
+    }
+
+    async function sendVoiceMessage(text) {
+        if (!text.trim() || !currentVoiceProject) return;
+
+        // Add user message
+        voiceChatHistory.push({ role: 'user', content: text });
+        renderVoiceMessage('user', text);
+
+        // Disable input
+        voiceChatInput.disabled = true;
+        voiceChatSubmit.disabled = true;
+        showVoiceTyping();
+
+        try {
+            const response = await fetch('/api/project-voice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectName: currentVoiceProject,
+                    message: text,
+                    history: voiceChatHistory.slice(0, -1) // Exclude current
+                })
+            });
+
+            hideVoiceTyping();
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to get response');
+            }
+
+            const data = await response.json();
+
+            // Add project response
+            voiceChatHistory.push({ role: 'project', content: data.response });
+            renderVoiceMessage('project', data.response);
+
+        } catch (error) {
+            hideVoiceTyping();
+            console.error('Voice chat error:', error);
+            renderVoiceMessage('project', `Прости, я не могу ответить сейчас... (${error.message})`);
+        } finally {
+            voiceChatInput.disabled = false;
+            voiceChatSubmit.disabled = false;
+            voiceChatInput.focus();
+        }
+    }
+
+    // Event listeners
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', openVoiceModal);
+    }
+
+    if (voiceModalClose) {
+        voiceModalClose.addEventListener('click', closeVoiceModal);
+    }
+
+    if (voiceModal) {
+        voiceModal.addEventListener('click', (e) => {
+            if (e.target === voiceModal) closeVoiceModal();
+        });
+    }
+
+    if (voiceProjectSelect) {
+        voiceProjectSelect.addEventListener('change', () => {
+            const selected = voiceProjectSelect.value;
+            if (selected) {
+                currentVoiceProject = selected;
+                voiceChatMessages.innerHTML = ''; // Clear placeholder
+                voiceChatInput.disabled = false;
+                voiceChatSubmit.disabled = false;
+                voiceChatInput.focus();
+                voiceChatInput.placeholder = `Talk to ${selected}...`;
+
+                // Optional: auto-greet
+                renderVoiceMessage('project', `Привет. Я — ${selected}. О чём хочешь поговорить?`);
+            } else {
+                currentVoiceProject = null;
+                voiceChatMessages.innerHTML = '<div class="voice-placeholder">Choose a project to start talking...</div>';
+                voiceChatInput.disabled = true;
+                voiceChatSubmit.disabled = true;
+            }
+        });
+    }
+
+    if (voiceChatForm) {
+        voiceChatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = voiceChatInput.value.trim();
+            if (text) {
+                sendVoiceMessage(text);
+                voiceChatInput.value = '';
+            }
+        });
+    }
+
+    // Escape to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && voiceModal?.classList.contains('active')) {
+            closeVoiceModal();
+        }
+    });
 });
