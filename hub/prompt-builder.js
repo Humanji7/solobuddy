@@ -7,6 +7,26 @@ const fs = require('fs').promises;
 const path = require('path');
 
 /**
+ * Detect language of user input based on character analysis
+ * @param {string} text - User's message
+ * @returns {'ru'|'en'} - Detected language
+ */
+function detectLanguage(text) {
+    if (!text || typeof text !== 'string') return 'en';
+
+    // Count Cyrillic and Latin characters
+    const cyrillicMatch = text.match(/[\u0400-\u04FF]/g);
+    const latinMatch = text.match(/[a-zA-Z]/g);
+
+    const cyrillicCount = cyrillicMatch ? cyrillicMatch.length : 0;
+    const latinCount = latinMatch ? latinMatch.length : 0;
+
+    // If significant Cyrillic presence (>30% of Latin), consider Russian
+    if (cyrillicCount > 0 && cyrillicCount > latinCount * 0.3) return 'ru';
+    return 'en';
+}
+
+/**
  * Build context-aware system prompt with personality
  * @param {Object} context - Rich context object
  * @param {Object} options - Options like mode, template, persona config
@@ -26,12 +46,30 @@ function matchProject(projectName, focusProject) {
 
 function buildSystemPrompt(context, options = {}) {
     const { projects, backlogItems, gitActivity, sessionLog, drafts, buddyMessage } = context;
-    const { mode = 'chat', template = null, focusProject = null } = options;
+    const { mode = 'chat', template = null, focusProject = null, userMessage = null } = options;
+
+    // ============================================
+    // Language Detection & Enforcement
+    // ============================================
+    let prompt = '';
+    if (userMessage) {
+        const detectedLang = detectLanguage(userMessage);
+        if (detectedLang === 'ru') {
+            prompt += `🔴 MANDATORY LANGUAGE: Respond in RUSSIAN (Русский)!
+User wrote in Russian — your ENTIRE response must be in Russian.
+
+`;
+        } else {
+            prompt += `🔴 MANDATORY LANGUAGE: Respond in ENGLISH!
+User wrote in English — your ENTIRE response must be in English.
+
+`;
+        }
+    }
 
     // ============================================
     // Project Isolation Header (when focused)
     // ============================================
-    let prompt = '';
     if (focusProject && mode === 'content') {
         prompt += `⚠️ CRITICAL: You are writing ONLY about ${focusProject.toUpperCase()}.
 DO NOT mention or reference any other projects.
@@ -292,10 +330,11 @@ async function loadTemplate(templateName) {
 async function buildContentPrompt(context, options = {}) {
     const { template, persona, focusProject, userPrompt } = options;
 
-    // Base system prompt in content mode
+    // Base system prompt in content mode (with language detection from user prompt)
     let systemPrompt = buildSystemPrompt(context, {
         mode: 'content',
-        focusProject
+        focusProject,
+        userMessage: userPrompt
     });
 
     // Add persona-specific prompt
@@ -486,5 +525,6 @@ module.exports = {
     buildProjectVoicePrompt,
     loadPersonaConfig,
     loadPersonaPrompt,
-    loadTemplate
+    loadTemplate,
+    detectLanguage
 };
