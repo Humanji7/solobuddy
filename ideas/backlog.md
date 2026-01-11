@@ -21,6 +21,12 @@
 
 ## Medium Priority (Needs development)
 
+- [ ] **про новые фичи solobuddy**
+  - Format: Thread
+
+- [ ] **SPHERE Demo GIF: Eye tracking touch point**
+  - Format: Thread
+
 - [ ] **про живой orb**
   - Format: Thread
 

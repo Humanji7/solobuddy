@@ -247,6 +247,46 @@
     color: var(--confidence-medium);
 }
 
+/* Phase 2: Project Suggestions (Context Awareness) */
+.card-suggestions.project-suggestions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.card-suggestions .suggestion-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.card-suggestions .project-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.card-suggestions .project-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.card-suggestions .project-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.card-suggestions .suggestion-hint {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
 /* ============================================
    Card Actions
    ============================================ */

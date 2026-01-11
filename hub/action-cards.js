@@ -51,7 +51,12 @@ function renderAddIdeaCard(data, options = {}) {
 
     // Nielsen: Duplicate warning
     const duplicateLink = links?.find(l => l.type === 'duplicate_warning');
-    const contextLink = links?.find(l => l.type === 'recent_activity');
+
+    // Phase 2: Find all project suggestions (with temporal scoring)
+    const projectSuggestions = links?.filter(l =>
+        l.type === 'project_suggestion' || l.type === 'recent_activity'
+    ) || [];
+    const topProjectSuggestion = projectSuggestions[0];
 
     card.innerHTML = `
         <button class="card-dismiss" aria-label="Закрыть">×</button>
@@ -83,10 +88,20 @@ function renderAddIdeaCard(data, options = {}) {
             </div>
         </div>
         
-        ${contextLink ? `
-            <div class="card-suggestions">
-                <span class="suggestion-text">💡 ${contextLink.suggestion}</span>
-                <button class="link-btn" data-action="add-link">Связать</button>
+        ${projectSuggestions.length > 0 ? `
+            <div class="card-suggestions project-suggestions">
+                <span class="suggestion-label">📌 Проект:</span>
+                <select name="project" class="project-select">
+                    <option value="">— Без проекта —</option>
+                    ${projectSuggestions.map((ps, idx) => `
+                        <option value="${escapeHtml(ps.project)}" ${idx === 0 ? 'selected' : ''}>
+                            ${escapeHtml(ps.project)} ${ps.score >= 100 ? '🔥' : ps.score >= 70 ? '⚡' : ''}
+                        </option>
+                    `).join('')}
+                </select>
+                ${topProjectSuggestion ? `
+                    <span class="suggestion-hint">💡 ${escapeHtml(topProjectSuggestion.suggestion)}</span>
+                ` : ''}
             </div>
         ` : ''}
         
@@ -131,6 +146,10 @@ function bindAddIdeaCardEvents(card, data, options) {
         const format = card.querySelector('.format-select').value;
         const priority = card.querySelector('.priority-btn.active')?.dataset.value || 'medium';
 
+        // Phase 2: Get selected project from dropdown
+        const projectSelect = card.querySelector('.project-select');
+        const project = projectSelect?.value || null;
+
         // Show loading
         card.classList.add('loading');
 
@@ -139,7 +158,7 @@ function bindAddIdeaCardEvents(card, data, options) {
                 title: data.title,
                 format,
                 priority,
-                linkedProject: data.links?.find(l => l.type === 'recent_activity')?.project
+                project  // Phase 2: Pass selected project
             });
 
             // Success - remove card and show undo toast

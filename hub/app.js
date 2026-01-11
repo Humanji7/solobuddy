@@ -889,14 +889,15 @@ async function sendChatMessage(text) {
                 const card = renderActionCard(intentData.actionCard, {
                     onAction: async (action, data) => {
                         if (action === 'add') {
-                            // Add to backlog via existing API
+                            // Add to backlog via existing API (Phase 2: include project)
                             const response = await fetch('/api/backlog', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     title: data.title,
                                     format: data.format,
-                                    priority: data.priority
+                                    priority: data.priority,
+                                    project: data.project || null  // Phase 2: project linking
                                 })
                             });
 

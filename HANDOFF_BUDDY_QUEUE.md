@@ -1,66 +1,41 @@
 # HANDOFF: Buddy Messages Queue/Carousel
 
-## Что сделано
-- Два buddy блока одновременно (слева + справа)
-- Рандомные цвета из 6 схем
-- Жёсткие формулировки ("Ну и чо?", "Там живой кто?")
-- Dismiss по клику ×
+**Session**: 2026-01-10  
+**Status**: ✅ Complete — Implementation verified
 
-## Проблема
-Сейчас dismiss просто скрывает блок и остаётся пустое место. 
-Нужно: **dismiss триггерит появление СЛЕДУЮЩЕГО сообщения** из очереди.
+---
 
-## Что нужно сделать
+## ✅ Что сделано
 
-### 1. Backend: Возвращать ВСЕ insights, не только два
-```javascript
-// watcher.js — getBuddyMessage()
-return {
-    insights: allInsights,  // Все доступные insights
-    timestamp: new Date().toISOString(),
-    projectsCount
-};
-```
+### Backend (`hub/watcher.js`)
+- ✅ `getBuddyMessage()` возвращает ВСЕ insights как массив
+- ✅ Каждый insight с рандомной цветовой схемой
 
-### 2. Frontend: Queue система
-```javascript
-// app.js
-let insightsQueue = [];  // Все insights с сервера
-let currentLeftIndex = 0;
-let currentRightIndex = 1;
+### Frontend (`hub/app.js`)
+- ✅ `insightsQueue[]` — очередь всех insights
+- ✅ `dismissAndShowNext(side)` — dismiss → show next
+- ✅ Auto-rotation каждые 45 секунд
+- ✅ `queue-empty` class когда очередь исчерпана
 
-// При dismiss левого блока:
-function dismissLeft() {
-    currentLeftIndex += 2;  // Берём следующий из очереди
-    if (currentLeftIndex < insightsQueue.length) {
-        // Показать новый insight с анимацией
-        renderBuddyBlock('left', insightsQueue[currentLeftIndex]);
-    } else {
-        // Очередь закончилась — скрыть блок окончательно
-        buddyLeft.classList.add('dismissed');
-    }
-}
-```
+### CSS (`hub/styles.css`)
+- ✅ `.buddy-message.appearing` animation (slideIn)
+- ✅ `.buddy-message.queue-empty` hidden state
 
-### 3. Анимация появления нового блока
-```css
-.buddy-message.appearing {
-    animation: slideIn 0.3s ease;
-}
+---
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-```
+## ✅ Verification Complete
 
-### 4. Опционально: авто-ротация
-Если не dismiss'ить, блоки могут сами меняться каждые N секунд (как карусель).
+1. **Dismiss Left** ✅ → следующий insight появляется
+2. **Dismiss Right** ✅ → следующий insight появляется  
+3. **Animation** ✅ → плавное появление нового блока
+4. **Auto-rotation** ✅ → блоки меняются каждые 45 сек
 
-## Файлы для изменения
-- `hub/watcher.js` — возвращать полный массив insights
-- `hub/app.js` — queue логика, dismiss → next
-- `hub/styles.css` — анимация появления
+---
 
-## Вопрос на обсуждение
-Нужна ли авто-ротация или только по dismiss?
+## Файлы
+
+| Файл | Изменения |
+|------|-----------|
+| `hub/watcher.js` | `insights[]` array return |
+| `hub/app.js` | Queue system, dismiss handlers |
+| `hub/styles.css` | Appearing animation |
