@@ -612,6 +612,11 @@ app.post('/api/chat', async (req, res) => {
             buddyMessage
         };
 
+        // ============================================
+        // Intent Detection (Phase 1: IRL)
+        // ============================================
+        const { intentType, actionCard, confidence } = parseIntent(message, context);
+
         // Build messages array with history + new message
         const messages = [
             ...history,
@@ -620,7 +625,12 @@ app.post('/api/chat', async (req, res) => {
 
         const response = await sendToClaude(messages, context);
 
-        res.json({ response });
+        res.json({
+            response,
+            actionCard,        // Include action card if detected
+            intent: intentType,
+            confidence
+        });
     } catch (error) {
         console.error('Chat error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to get response' });
