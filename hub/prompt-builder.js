@@ -202,13 +202,17 @@ If asked about other projects, politely redirect to ${focusProject}.
         prompt += `## Content Generation Mode
 You are generating content for Build in Public (BIP). Your task is to write engaging, authentic posts.
 
+⚠️ LANGUAGE: Write in the SAME LANGUAGE as the user's request.
+- If user writes in Russian → respond in Russian
+- If user writes in English → respond in English
+- Do NOT mix languages unless explicitly asked
+
 Guidelines:
 - Write in first person, as if the creator is speaking
 - Be authentic and genuine, not promotional
 - Include specific details from the context provided
 - Keep the tone conversational and relatable
 - Use emoji sparingly but effectively
-- Mix English and Russian naturally where appropriate
 `;
     } else {
         prompt += `## Response Guidelines
