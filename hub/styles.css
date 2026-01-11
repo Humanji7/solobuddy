@@ -256,17 +256,65 @@ body {
 .buddy-messages-container {
     display: flex;
     justify-content: space-between;
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.buddy-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    flex: 1;
+    align-items: stretch;
+}
+
+.buddy-add,
+.buddy-remove {
+    width: 24px;
+    height: 24px;
+    margin: 0 auto;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 50%;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.buddy-column:hover .buddy-add,
+.buddy-column:hover .buddy-remove {
+    opacity: 1;
+}
+
+.buddy-add:hover,
+.buddy-remove:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    border-style: solid;
+}
+
+.buddy-remove {
+    display: none;
+}
+
+.buddy-hidden {
+    display: none !important;
+}
+
+.buddy-message.buddy-expanded {
+    display: flex !important;
 }
 
 .buddy-message {
-    flex: 0 0 calc(50% - var(--spacing-sm));
+    flex: 1;
     position: relative;
     display: flex;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-    padding: var(--spacing-lg);
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     /* Readable card - WCAG AA compliant, solid background */
     background: #FFFCF8 !important;
     backdrop-filter: none !important;
@@ -315,7 +363,7 @@ body {
 }
 
 .buddy-avatar {
-    font-size: 1.25rem;
+    font-size: 1rem;
     animation: breatheGlow var(--breath-duration) ease-in-out infinite;
     flex-shrink: 0;
 }
@@ -326,10 +374,10 @@ body {
 }
 
 .buddy-content .message-text {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: #1A1816;
-    line-height: 1.6;
+    line-height: 1.5;
     margin: 0;
 }
 
@@ -928,7 +976,8 @@ body {
 
 .modal-header h3 {
     font-size: 1.125rem;
-    font-weight: 500;
+    font-weight: 600;
+    color: #3D3833;
 }
 
 .modal-close {
@@ -956,9 +1005,9 @@ body {
 .form-group label {
     display: block;
     margin-bottom: var(--spacing-xs);
-    font-size: 0.8125rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 0.875rem;
+    color: #3D3833;
+    font-weight: 600;
 }
 
 .form-group input,
@@ -1038,12 +1087,13 @@ body {
     gap: var(--spacing-md);
 }
 
-.btn-github {
+.btn-github,
+.btn-local {
     padding: var(--spacing-xs) var(--spacing-md);
-    background: #24292e;
-    border: none;
+    background: transparent;
+    border: 2px solid var(--accent-primary);
     border-radius: var(--radius-sm);
-    color: white;
+    color: var(--accent-primary);
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
@@ -1053,37 +1103,20 @@ body {
     gap: var(--spacing-xs);
 }
 
-.btn-github:hover {
-    background: #2f363d;
+.btn-github:hover,
+.btn-local:hover {
+    background: rgba(216, 91, 44, 0.1);
     transform: translateY(-1px);
 }
 
 .btn-github.connected {
     background: var(--status-success);
+    border-color: var(--status-success);
+    color: white;
 }
 
 .btn-github.connected:hover {
-    background: #8AAE7F;
-}
-
-.btn-local {
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--accent-primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: white;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-}
-
-.btn-local:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
+    background: #6B8E5F;
 }
 
 .github-badge {
@@ -1519,7 +1552,7 @@ body {
     align-items: center;
     gap: var(--spacing-xs);
     padding: var(--spacing-xs) var(--spacing-sm);
-    background: linear-gradient(135deg, #B94A32 0%, #9B3A2A 100%);
+    background: var(--accent-primary);
     border: none;
     border-radius: var(--radius-sm);
     color: white;
@@ -1530,8 +1563,8 @@ body {
 }
 
 .btn-voice:hover {
-    background: linear-gradient(135deg, #D85B2C 0%, #7D2B24 100%);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    background: var(--accent-hover);
+    box-shadow: 0 4px 12px rgba(216, 91, 44, 0.4);
     transform: translateY(-1px);
 }
 

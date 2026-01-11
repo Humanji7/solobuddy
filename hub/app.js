@@ -17,9 +17,16 @@ const modalClose = document.getElementById('modal-close');
 const ideaForm = document.getElementById('idea-form');
 const sessionLogBadge = document.querySelector('.session-log .badge');
 
-// Dual buddy message elements
-const buddyLeft = document.getElementById('buddy-message-left');
-const buddyRight = document.getElementById('buddy-message-right');
+// Buddy message elements (4 slots: 0,1 visible, 2,3 hidden by default)
+const buddyBlocks = {
+    0: document.getElementById('buddy-0'),
+    1: document.getElementById('buddy-1'),
+    2: document.getElementById('buddy-2'),
+    3: document.getElementById('buddy-3')
+};
+// Backward compatibility aliases
+const buddyLeft = buddyBlocks[0];
+const buddyRight = buddyBlocks[1];
 
 // ============================================
 // Buddy Queue System
@@ -301,6 +308,96 @@ if (buddyRight) {
         });
     }
 }
+
+// ============================================
+// Expandable Buddy Messages (+/- buttons)
+// ============================================
+
+function saveBuddyExpandState() {
+    const state = {
+        leftExpanded: buddyBlocks[2] && !buddyBlocks[2].classList.contains('buddy-hidden'),
+        rightExpanded: buddyBlocks[3] && !buddyBlocks[3].classList.contains('buddy-hidden')
+    };
+    localStorage.setItem('buddyExpandState', JSON.stringify(state));
+}
+
+function loadBuddyExpandState() {
+    try {
+        const state = JSON.parse(localStorage.getItem('buddyExpandState'));
+        if (state) {
+            if (state.leftExpanded) expandBuddySlot('left');
+            if (state.rightExpanded) expandBuddySlot('right');
+        }
+    } catch (e) {
+        // Ignore parsing errors
+    }
+}
+
+function expandBuddySlot(column) {
+    const col = document.querySelector(`.buddy-column-${column}`);
+    if (!col) return;
+
+    const hiddenMsg = col.querySelector('.buddy-hidden');
+    const addBtn = col.querySelector('.buddy-add');
+    const removeBtn = col.querySelector('.buddy-remove');
+
+    if (hiddenMsg) {
+        hiddenMsg.classList.remove('buddy-hidden');
+        hiddenMsg.classList.add('buddy-expanded');
+        if (addBtn) addBtn.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'block';
+
+        // Fill with next insight from queue
+        const slotId = column === 'left' ? 2 : 3;
+        const nextIndex = slotId < insightsQueue.length ? slotId : 0;
+        if (insightsQueue[nextIndex]) {
+            const block = buddyBlocks[slotId];
+            if (block) {
+                const textEl = block.querySelector('.message-text');
+                if (textEl) textEl.textContent = insightsQueue[nextIndex].message;
+                if (insightsQueue[nextIndex].colorScheme) {
+                    block.style.setProperty('--buddy-accent', insightsQueue[nextIndex].colorScheme.accent);
+                }
+            }
+        }
+        saveBuddyExpandState();
+    }
+}
+
+function collapseBuddySlot(column) {
+    const col = document.querySelector(`.buddy-column-${column}`);
+    if (!col) return;
+
+    const expandedMsg = col.querySelector('.buddy-expanded');
+    const addBtn = col.querySelector('.buddy-add');
+    const removeBtn = col.querySelector('.buddy-remove');
+
+    if (expandedMsg) {
+        expandedMsg.classList.add('buddy-hidden');
+        expandedMsg.classList.remove('buddy-expanded');
+        if (addBtn) addBtn.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'none';
+        saveBuddyExpandState();
+    }
+}
+
+// Add button handlers
+document.querySelectorAll('.buddy-add').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const column = btn.dataset.column;
+        expandBuddySlot(column);
+    });
+});
+
+// Remove button handlers
+document.querySelectorAll('.buddy-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const column = btn.dataset.column;
+        collapseBuddySlot(column);
+    });
+});
 
 // ============================================
 // Data Loading
@@ -1013,6 +1110,7 @@ chatInput.addEventListener('keydown', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllData();
+    loadBuddyExpandState();
     checkGitHubStatus();
     handleOAuthCallback();
     loadChatHistory();

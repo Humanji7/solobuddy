@@ -198,7 +198,7 @@
 
 /* Editor Toggle Button (in header) */
 .btn-editor-toggle {
-    background: linear-gradient(135deg, #8A2BE2, #6B21A8);
+    background: var(--accent-primary);
     border: none;
     color: #fff;
     padding: 8px 16px;
@@ -213,8 +213,9 @@
 }
 
 .btn-editor-toggle:hover {
+    background: var(--accent-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+    box-shadow: 0 4px 12px rgba(216, 91, 44, 0.3);
 }
 
 /* Overlay when panel is open */
