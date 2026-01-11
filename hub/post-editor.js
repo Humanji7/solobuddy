@@ -108,6 +108,23 @@ function updateCharCounter() {
     } else if (length > TWITTER_LIMIT - 30) {
         charCounter.classList.add('warning');
     }
+
+    // Update header button indicator
+    updateEditorButtonIndicator();
+}
+
+/**
+ * Update the Write button indicator based on draft content
+ */
+function updateEditorButtonIndicator() {
+    const editorBtn = document.getElementById('editor-toggle-btn');
+    if (!editorBtn || !postTextarea) return;
+
+    if (postTextarea.value.trim().length > 0) {
+        editorBtn.classList.add('has-content');
+    } else {
+        editorBtn.classList.remove('has-content');
+    }
 }
 
 /**
