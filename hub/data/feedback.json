@@ -4,5 +4,11 @@
     "intent": "напиши thread про SPHERE",
     "feedback": "correct",
     "timestamp": 1768125796557
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "напишщи пост про солобадди интерапсный на счет последнешго измененичя",
+    "feedback": "correct",
+    "timestamp": 1768127666360
   }
 ]

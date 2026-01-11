@@ -24,6 +24,8 @@
                     <span class="status-dot"></span>
                     <span class="status-text" id="status-text">Watching projects...</span>
                 </div>
+                <button id="ai-drafts-btn" class="btn-ai-drafts">📝 <span class="drafts-count"
+                        id="drafts-count">0</span></button>
                 <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
                 <button id="local-connect-btn" class="btn-local">📁 Add Local</button>
                 <button id="editor-toggle-btn" class="btn-editor-toggle">✎ Write</button>
@@ -173,6 +175,22 @@
                 </div>
                 <div class="modal-footer">
                     <button id="connect-local-selected" class="btn-submit" disabled>Connect Selected (0)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Drafts Modal -->
+        <div class="modal" id="ai-drafts-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>📝 AI-Generated Drafts</h3>
+                    <button class="modal-close" id="ai-drafts-modal-close">&times;</button>
+                </div>
+                <div id="ai-drafts-list" class="ai-drafts-list">
+                    <div class="loading">Loading drafts...</div>
+                </div>
+                <div class="modal-footer">
+                    <span class="drafts-hint">💡 Драфты сохраняются автоматически при генерации</span>
                 </div>
             </div>
         </div>

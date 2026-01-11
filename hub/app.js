@@ -1049,6 +1049,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ============================================
+    // AI Drafts Modal
+    // ============================================
+    const aiDraftsBtn = document.getElementById('ai-drafts-btn');
+    const aiDraftsModal = document.getElementById('ai-drafts-modal');
+    const aiDraftsModalClose = document.getElementById('ai-drafts-modal-close');
+    const aiDraftsList = document.getElementById('ai-drafts-list');
+    const draftsCount = document.getElementById('drafts-count');
+
+    async function loadAiDrafts() {
+        aiDraftsList.innerHTML = '<div class="loading">Loading drafts...</div>';
+        try {
+            const response = await fetch('/api/ai-drafts');
+            const drafts = await response.json();
+
+            // Update counter
+            if (draftsCount) draftsCount.textContent = drafts.length;
+
+            if (drafts.length === 0) {
+                aiDraftsList.innerHTML = '<div class="empty-state">Нет сохранённых драфтов.<br>Они появятся автоматически после генерации.</div>';
+                return;
+            }
+
+            aiDraftsList.innerHTML = drafts.map(draft => `
+                <div class="ai-draft-item" data-id="${draft.id}">
+                    <div class="draft-header">
+                        <span class="draft-template">${draft.template === 'thread' ? '🧵' : draft.template === 'tip' ? '💡' : '📝'} ${draft.template}</span>
+                        ${draft.project ? `<span class="draft-project">📁 ${draft.project}</span>` : ''}
+                        <span class="draft-time">${formatRelativeTime(draft.timestamp)}</span>
+                    </div>
+                    <div class="draft-preview">${escapeHtml(draft.content.substring(0, 150))}${draft.content.length > 150 ? '...' : ''}</div>
+                    <div class="draft-actions">
+                        <button class="draft-copy" data-content="${encodeURIComponent(draft.content)}">📋 Copy</button>
+                        <button class="draft-use" data-content="${encodeURIComponent(draft.content)}">✎ Use</button>
+                        <button class="draft-delete" data-id="${draft.id}">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Bind events
+            aiDraftsList.querySelectorAll('.draft-copy').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const content = decodeURIComponent(btn.dataset.content);
+                    await navigator.clipboard.writeText(content);
+                    btn.textContent = '✓ Copied';
+                    setTimeout(() => btn.textContent = '📋 Copy', 1500);
+                });
+            });
+
+            aiDraftsList.querySelectorAll('.draft-use').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const content = decodeURIComponent(btn.dataset.content);
+                    if (window.pushToEditor) {
+                        window.pushToEditor(content);
+                    }
+                    closeAiDraftsModal();
+                });
+            });
+
+            aiDraftsList.querySelectorAll('.draft-delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const id = btn.dataset.id;
+                    await fetch(`/api/ai-drafts/${id}`, { method: 'DELETE' });
+                    loadAiDrafts(); // Reload
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading AI drafts:', error);
+            aiDraftsList.innerHTML = '<div class="empty-state">Failed to load drafts</div>';
+        }
+    }
+
+    function formatRelativeTime(timestamp) {
+        const now = Date.now();
+        const diff = now - timestamp;
+        const mins = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        return `${days}d ago`;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function openAiDraftsModal() {
+        aiDraftsModal.classList.add('active');
+        loadAiDrafts();
+    }
+
+    function closeAiDraftsModal() {
+        aiDraftsModal.classList.remove('active');
+    }
+
+    if (aiDraftsBtn) {
+        aiDraftsBtn.addEventListener('click', openAiDraftsModal);
+    }
+    if (aiDraftsModalClose) {
+        aiDraftsModalClose.addEventListener('click', closeAiDraftsModal);
+    }
+    if (aiDraftsModal) {
+        aiDraftsModal.addEventListener('click', (e) => {
+            if (e.target === aiDraftsModal) closeAiDraftsModal();
+        });
+    }
+
+    // Load initial count
+    fetch('/api/ai-drafts').then(r => r.json()).then(d => {
+        if (draftsCount) draftsCount.textContent = d.length || 0;
+    }).catch(() => { });
+
     // Nielsen: Show first-run tooltip for new users
     if (typeof showFirstRunTooltip === 'function') {
         setTimeout(showFirstRunTooltip, 2000); // Delay to not overwhelm
