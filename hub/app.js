@@ -29,14 +29,17 @@ const buddyLeft = buddyBlocks[0];
 const buddyRight = buddyBlocks[1];
 
 // ============================================
-// Buddy Queue System
+// Buddy Queue System (4-slot rotation)
 // ============================================
 
 let insightsQueue = [];       // All insights from server
-let leftIndex = 0;            // Current left block index
-let rightIndex = 1;           // Current right block index  
+let slotIndices = [0, 1, 2, 3]; // Current insight index for each slot
 let autoRotateInterval = null;
 const AUTO_ROTATE_MS = 45000; // 45 seconds
+
+// Legacy aliases for backward compatibility
+let leftIndex = 0;
+let rightIndex = 1;
 
 // ============================================
 // API Functions
@@ -185,13 +188,22 @@ function getStatusEmoji(status) {
 }
 
 function renderBuddyMessage(data) {
-    // Reset indices
+    // Reset indices for all 4 slots
+    slotIndices = [0, 1, 2, 3];
     leftIndex = 0;
     rightIndex = 1;
 
-    // Render initial messages
-    renderBuddyBlock('left', insightsQueue[leftIndex]);
-    renderBuddyBlock('right', insightsQueue[rightIndex]);
+    // Render initial messages for visible slots (0 and 1)
+    renderBuddySlot(0);
+    renderBuddySlot(1);
+
+    // If slots 2 and 3 are expanded, render them too
+    if (buddyBlocks[2] && !buddyBlocks[2].classList.contains('buddy-hidden')) {
+        renderBuddySlot(2);
+    }
+    if (buddyBlocks[3] && !buddyBlocks[3].classList.contains('buddy-hidden')) {
+        renderBuddySlot(3);
+    }
 
     // Update status text with project count
     if (data.projectsCount !== undefined) {
@@ -206,10 +218,13 @@ function renderBuddyMessage(data) {
 }
 
 /**
- * Render a single buddy block with optional animation
+ * Render a buddy slot by index (0-3)
  */
-function renderBuddyBlock(side, insight) {
-    const block = side === 'left' ? buddyLeft : buddyRight;
+function renderBuddySlot(slotIndex) {
+    const block = buddyBlocks[slotIndex];
+    const insightIndex = slotIndices[slotIndex];
+    const insight = insightsQueue[insightIndex];
+
     if (!block || !insight) return;
 
     const textEl = block.querySelector('.message-text');
@@ -232,25 +247,55 @@ function renderBuddyBlock(side, insight) {
 }
 
 /**
- * Dismiss and show next insight for a side
+ * Render a single buddy block with optional animation (legacy)
  */
-function dismissAndShowNext(side) {
-    const block = side === 'left' ? buddyLeft : buddyRight;
+function renderBuddyBlock(side, insight) {
+    const slotIndex = side === 'left' ? 0 : 1;
+    const block = buddyBlocks[slotIndex];
+    if (!block || !insight) return;
+
+    const textEl = block.querySelector('.message-text');
+    if (textEl) {
+        textEl.textContent = insight.message;
+    }
+
+    if (insight.colorScheme) {
+        block.style.setProperty('--buddy-accent', insight.colorScheme.accent);
+    }
+
+    block.classList.remove('loading', 'dismissed', 'queue-empty');
+    block.classList.remove('appearing');
+    void block.offsetWidth;
+    block.classList.add('appearing');
+}
+
+/**
+ * Dismiss and show next insight for a slot
+ * @param {number|string} slotOrSide - Slot index (0-3) or legacy 'left'/'right'
+ */
+function dismissAndShowNext(slotOrSide) {
+    // Convert legacy side to slot index
+    let slotIndex;
+    if (typeof slotOrSide === 'string') {
+        slotIndex = slotOrSide === 'left' ? 0 : 1;
+    } else {
+        slotIndex = slotOrSide;
+    }
+
+    const block = buddyBlocks[slotIndex];
     if (!block) return;
 
-    // Calculate next index (skip by 2 to avoid overlap)
-    const currentIndex = side === 'left' ? leftIndex : rightIndex;
-    const nextIndex = currentIndex + 2;
+    // Calculate next index (skip by 4 to avoid overlap with other slots)
+    const currentIndex = slotIndices[slotIndex];
+    const nextIndex = currentIndex + 4;
 
     if (nextIndex < insightsQueue.length) {
-        // Update index
-        if (side === 'left') {
-            leftIndex = nextIndex;
-        } else {
-            rightIndex = nextIndex;
-        }
-        // Show next insight with animation
-        renderBuddyBlock(side, insightsQueue[nextIndex]);
+        slotIndices[slotIndex] = nextIndex;
+        // Update legacy aliases
+        if (slotIndex === 0) leftIndex = nextIndex;
+        if (slotIndex === 1) rightIndex = nextIndex;
+        // Show next insight
+        renderBuddySlot(slotIndex);
     } else {
         // Queue exhausted — hide permanently
         block.classList.add('dismissed', 'queue-empty');
@@ -258,23 +303,23 @@ function dismissAndShowNext(side) {
 }
 
 /**
- * Start auto-rotation carousel
+ * Start auto-rotation carousel for all active slots
  */
 function startAutoRotation() {
-    // Clear existing interval
     if (autoRotateInterval) {
         clearInterval(autoRotateInterval);
     }
 
     autoRotateInterval = setInterval(() => {
-        // Rotate left if not dismissed permanently
-        if (buddyLeft && !buddyLeft.classList.contains('queue-empty')) {
-            dismissAndShowNext('left');
-        }
-        // Rotate right if not dismissed permanently
-        if (buddyRight && !buddyRight.classList.contains('queue-empty')) {
-            dismissAndShowNext('right');
-        }
+        // Rotate all visible slots that aren't exhausted
+        [0, 1, 2, 3].forEach(slotIndex => {
+            const block = buddyBlocks[slotIndex];
+            if (block &&
+                !block.classList.contains('buddy-hidden') &&
+                !block.classList.contains('queue-empty')) {
+                dismissAndShowNext(slotIndex);
+            }
+        });
     }, AUTO_ROTATE_MS);
 }
 
@@ -288,26 +333,19 @@ function stopAutoRotation() {
     }
 }
 
-// Dismiss handlers for buddy messages
-if (buddyLeft) {
-    const dismissBtn = buddyLeft.querySelector('.buddy-dismiss');
-    if (dismissBtn) {
-        dismissBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dismissAndShowNext('left');
-        });
+// Dismiss handlers for all buddy message slots (0-3)
+[0, 1, 2, 3].forEach(slotIndex => {
+    const block = buddyBlocks[slotIndex];
+    if (block) {
+        const dismissBtn = block.querySelector('.buddy-dismiss');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dismissAndShowNext(slotIndex);
+            });
+        }
     }
-}
-
-if (buddyRight) {
-    const dismissBtn = buddyRight.querySelector('.buddy-dismiss');
-    if (dismissBtn) {
-        dismissBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dismissAndShowNext('right');
-        });
-    }
-}
+});
 
 // ============================================
 // Expandable Buddy Messages (+/- buttons)
@@ -347,18 +385,11 @@ function expandBuddySlot(column) {
         if (addBtn) addBtn.style.display = 'none';
         if (removeBtn) removeBtn.style.display = 'block';
 
-        // Fill with next insight from queue
-        const slotId = column === 'left' ? 2 : 3;
-        const nextIndex = slotId < insightsQueue.length ? slotId : 0;
-        if (insightsQueue[nextIndex]) {
-            const block = buddyBlocks[slotId];
-            if (block) {
-                const textEl = block.querySelector('.message-text');
-                if (textEl) textEl.textContent = insightsQueue[nextIndex].message;
-                if (insightsQueue[nextIndex].colorScheme) {
-                    block.style.setProperty('--buddy-accent', insightsQueue[nextIndex].colorScheme.accent);
-                }
-            }
+        // Fill with insight using the new slot system
+        const slotIndex = column === 'left' ? 2 : 3;
+        // Ensure slotIndices is properly set for this slot
+        if (slotIndices[slotIndex] < insightsQueue.length) {
+            renderBuddySlot(slotIndex);
         }
         saveBuddyExpandState();
     }
