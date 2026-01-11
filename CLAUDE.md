@@ -1,3 +1,5 @@
+> 🚨 **Read ~/.agent/GUPP.md FIRST** — mandatory startup gate
+
 # SoloBuddy
 
 > Agent entry point. Read this first.

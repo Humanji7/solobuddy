@@ -11,7 +11,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { getBuddyMessage } = require('./watcher');
 const { getUserRepos, matchLocalRepos, addProjectsToConfig, scanLocalProjects, addLocalProjectsToConfig, updateProjectRemotes, normalizeGitUrl } = require('./github-api');
-const { sendToClaude } = require('./chat-api');
+const { sendToClaude, generateContent } = require('./chat-api');
 const { parseIntent } = require('./intent-parser');
 
 const app = express();
@@ -624,6 +624,125 @@ app.post('/api/chat', async (req, res) => {
     } catch (error) {
         console.error('Chat error:', error.message);
         res.status(500).json({ error: error.message || 'Failed to get response' });
+    }
+});
+
+// POST /api/content/generate — Generate BIP content with personas and templates (Phase 4.1)
+app.post('/api/content/generate', async (req, res) => {
+    const { prompt, template, persona, project } = req.body;
+
+    if (!prompt) {
+        return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    try {
+        // ============================================
+        // Gather Rich Context (same as chat)
+        // ============================================
+
+        // 1. Projects
+        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
+        let projects = [];
+        try {
+            const projectsData = await fs.readFile(projectsPath, 'utf-8');
+            const parsed = JSON.parse(projectsData);
+            projects = parsed.projects || parsed;
+        } catch (e) {
+            // No projects file yet
+        }
+
+        // 2. Backlog
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        // 3. Session Log
+        let sessionLog = [];
+        try {
+            const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8');
+            sessionLog = parseSessionLog(sessionContent);
+        } catch (e) {
+            // No session log
+        }
+
+        // 4. Drafts
+        let drafts = [];
+        try {
+            const files = await fs.readdir(PATHS.drafts);
+            const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'README.md');
+            drafts = await Promise.all(
+                mdFiles.map(filename => parseDraft(path.join(PATHS.drafts, filename)))
+            );
+        } catch (e) {
+            // No drafts
+        }
+
+        // 5. Git Activity (from watcher)
+        const { loadProjects, scanProject, getActivityStats } = require('./watcher');
+        let gitActivity = [];
+        try {
+            const allProjects = await loadProjects();
+            for (const proj of allProjects) {
+                const scanResult = await scanProject(proj.path);
+                const stats = getActivityStats(proj.name, scanResult);
+                gitActivity.push(stats);
+            }
+        } catch (e) {
+            // Watcher not available
+        }
+
+        // 6. Buddy Message
+        let buddyMessage = null;
+        try {
+            buddyMessage = await getBuddyMessage();
+        } catch (e) {
+            // No buddy message
+        }
+
+        // ============================================
+        // Build Context and Generate Content
+        // ============================================
+        const context = {
+            projects,
+            backlogItems,
+            sessionLog,
+            drafts,
+            gitActivity,
+            buddyMessage
+        };
+
+        const result = await generateContent(
+            { prompt, template, persona, project },
+            context
+        );
+
+        res.json({
+            success: true,
+            content: result.content,
+            metadata: result.metadata
+        });
+
+    } catch (error) {
+        console.error('Content generation error:', error.message);
+
+        // Handle specific error types
+        if (error.response?.status === 429) {
+            return res.status(429).json({
+                success: false,
+                error: 'Rate limit. Подожди минуту.'
+            });
+        }
+
+        if (error.status === 500 || error.response?.status === 500) {
+            return res.status(500).json({
+                success: false,
+                error: 'Claude не отвечает. Try again.'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Что-то пошло не так.'
+        });
     }
 });
 

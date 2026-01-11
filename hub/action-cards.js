@@ -52,6 +52,8 @@ function renderActionCard(actionCard, options = {}) {
             return renderActivityCard(actionCard, options);
         case 'ChangePriorityCard':
             return renderChangePriorityCard(actionCard, options);
+        case 'ContentGeneratorCard':
+            return renderContentGeneratorCard(actionCard, options);
         default:
             console.warn('Unknown action card type:', type);
             return null;
@@ -490,6 +492,199 @@ function renderChangePriorityCard(data, options = {}) {
 
     card.querySelector('.card-dismiss').addEventListener('click', () => card.remove());
     return card;
+}
+
+/**
+ * ContentGeneratorCard — Generate BIP content with AI (Phase 4.1)
+ */
+function renderContentGeneratorCard(data, options = {}) {
+    const { prompt, template, project, confidence, confidenceLevel, confidenceBadge } = data;
+
+    const card = document.createElement('div');
+    card.className = 'action-card content-generator';
+    card.dataset.cardType = 'ContentGeneratorCard';
+
+    // Determine template display name
+    const templateNames = { thread: 'Thread 🧵', tip: 'Tip 💡', post: 'Post 📝' };
+    const templateName = templateNames[template] || 'Thread 🧵';
+
+    card.innerHTML = `
+        <button class="card-dismiss" aria-label="Закрыть">×</button>
+        
+        <div class="card-header">
+            <div class="card-title">✨ Генерация контента</div>
+            <span class="confidence-badge ${confidenceLevel}">${confidenceBadge} ${confidence}%</span>
+        </div>
+        
+        <div class="card-preview">
+            <span class="preview-label">📝 Prompt:</span>
+            <span class="preview-text">${escapeHtml(prompt.substring(0, 80))}${prompt.length > 80 ? '...' : ''}</span>
+        </div>
+        
+        <div class="card-controls">
+            <select name="template" class="template-select">
+                <option value="thread" ${template === 'thread' ? 'selected' : ''}>Thread 🧵</option>
+                <option value="tip" ${template === 'tip' ? 'selected' : ''}>Tip 💡</option>
+                <option value="post" ${template === 'post' ? 'selected' : ''}>Post 📝</option>
+            </select>
+            
+            <select name="persona" class="persona-select">
+                <option value="jester-sage" selected>Jester-Sage 🎭</option>
+                <option value="technical-writer">Technical Writer 📐</option>
+            </select>
+        </div>
+        
+        ${project ? `
+            <div class="card-project">
+                <span class="project-label">📁 Проект:</span>
+                <span class="project-name">${escapeHtml(project)}</span>
+            </div>
+        ` : ''}
+        
+        <div class="card-actions">
+            <button class="btn-primary" data-action="generate">🚀 Сгенерировать</button>
+            <button class="btn-secondary" data-action="cancel">Отмена</button>
+        </div>
+        
+        <div class="generation-progress" style="display: none;">
+            <div class="progress-bar"><div class="progress-fill"></div></div>
+            <span class="progress-text">Генерирую...</span>
+        </div>
+        
+        <div class="card-feedback">
+            <button class="feedback-btn positive" data-feedback="correct" title="Buddy понял правильно">👍</button>
+            <button class="feedback-btn negative" data-feedback="wrong" title="Не то что я имел в виду">👎</button>
+        </div>
+    `;
+
+    // Bind events
+    bindContentGeneratorEvents(card, data, options);
+
+    // Keyboard navigation
+    initKeyboardNav(card);
+
+    return card;
+}
+
+/**
+ * Bind events for ContentGeneratorCard
+ */
+function bindContentGeneratorEvents(card, data, options) {
+    // Dismiss
+    card.querySelector('.card-dismiss').addEventListener('click', () => {
+        card.remove();
+        options.onDismiss?.();
+    });
+
+    // Cancel
+    card.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+        card.remove();
+        options.onDismiss?.();
+    });
+
+    // Generate button
+    card.querySelector('[data-action="generate"]').addEventListener('click', async () => {
+        const template = card.querySelector('.template-select').value;
+        const persona = card.querySelector('.persona-select').value;
+
+        // Show loading state
+        const generateBtn = card.querySelector('[data-action="generate"]');
+        const progressDiv = card.querySelector('.generation-progress');
+        const progressFill = card.querySelector('.progress-fill');
+        const progressText = card.querySelector('.progress-text');
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = '⏳ Генерирую...';
+        progressDiv.style.display = 'block';
+
+        // Animate progress bar
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+            progress = Math.min(progress + 5, 90);
+            progressFill.style.width = progress + '%';
+        }, 300);
+
+        try {
+            const response = await fetch('/api/content/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: data.prompt,
+                    template,
+                    persona,
+                    project: data.project
+                })
+            });
+
+            clearInterval(progressInterval);
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Generation failed');
+            }
+
+            const result = await response.json();
+
+            // Complete progress
+            progressFill.style.width = '100%';
+            progressText.textContent = '✓ Готово!';
+
+            // Push to Post Editor
+            if (window.pushToEditor) {
+                window.pushToEditor(result.content);
+            }
+
+            // Show success and remove card
+            setTimeout(() => {
+                card.remove();
+                if (typeof showToast === 'function') {
+                    showToast(`✓ Контент сгенерирован (${result.metadata?.tokensUsed || '?'} tokens)`);
+                }
+            }, 500);
+
+        } catch (error) {
+            clearInterval(progressInterval);
+            progressDiv.style.display = 'none';
+            generateBtn.disabled = false;
+            generateBtn.textContent = '🚀 Сгенерировать';
+            showCardError(card, error.message || 'Ошибка генерации');
+        }
+    });
+
+    // Feedback buttons
+    card.querySelectorAll('.feedback-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const feedback = btn.dataset.feedback;
+
+            try {
+                await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardType: 'ContentGeneratorCard',
+                        intent: data.prompt.substring(0, 100),
+                        feedback,
+                        timestamp: Date.now()
+                    })
+                });
+            } catch (e) {
+                console.error('Failed to send feedback:', e);
+            }
+
+            // Visual confirmation
+            btn.style.transform = 'scale(1.3)';
+            btn.textContent = feedback === 'correct' ? '✓' : '✗';
+
+            setTimeout(() => {
+                btn.style.transform = '';
+                const feedbackArea = card.querySelector('.card-feedback');
+                if (feedbackArea) {
+                    feedbackArea.style.opacity = '0.5';
+                    feedbackArea.style.pointerEvents = 'none';
+                }
+            }, 500);
+        });
+    });
 }
 
 // Export for use in app.js

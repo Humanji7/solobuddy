@@ -41,6 +41,22 @@ const INTENT_PATTERNS = {
         /повысь.*приоритет/i,
         /urgent/i,
         /срочн/i
+    ],
+    generate_content: [
+        /напиши.*пост/i,
+        /напиши.*thread/i,
+        /напиши.*tip/i,
+        /сделай.*thread/i,
+        /сгенериру[й|ировать].*пост/i,
+        /сгенериру[й|ировать].*thread/i,
+        /write.*post/i,
+        /write.*thread/i,
+        /generate.*content/i,
+        /создай.*пост/i,
+        /draft.*post/i,
+        /draft.*thread/i,
+        /нужен.*пост.*про/i,
+        /хочу.*пост.*про/i
     ]
 };
 
@@ -122,6 +138,10 @@ function extractEntities(message, context) {
     if (newIdeaTitle && !entities.idea) {
         entities.newIdeaTitle = newIdeaTitle;
     }
+
+    // Extract content generation prompt (for generate_content intent)
+    // The original message IS the prompt for content generation
+    entities.contentPrompt = message;
 
     return entities;
 }
@@ -416,6 +436,17 @@ function buildActionCard(intentType, entities, links, confidence) {
                 type: 'ChangePriorityCard',
                 idea: entities.idea || null,
                 newPriority: entities.priority || 'high',
+                confidence,
+                confidenceLevel,
+                confidenceBadge
+            };
+
+        case 'generate_content':
+            return {
+                type: 'ContentGeneratorCard',
+                prompt: entities.contentPrompt || '',
+                template: entities.format || 'thread',  // thread, tip, post
+                project: entities.project?.name || null,
                 confidence,
                 confidenceLevel,
                 confidenceBadge
