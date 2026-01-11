@@ -4,6 +4,35 @@
    ============================================ */
 
 /**
+ * Initialize keyboard navigation for Action Card (Nielsen: Flexibility/Efficiency)
+ * - Enter = confirm primary action
+ * - Esc = dismiss card
+ * - Tab = cycle through focusable elements (browser native)
+ * @param {HTMLElement} card - The action card element
+ */
+function initKeyboardNav(card) {
+    // Make card focusable
+    card.setAttribute('tabindex', '0');
+
+    card.addEventListener('keydown', (e) => {
+        // Esc = dismiss
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            card.querySelector('.card-dismiss')?.click();
+        }
+
+        // Enter = confirm (but not when on select/button to allow their native behavior)
+        if (e.key === 'Enter' && !e.target.matches('select, button')) {
+            e.preventDefault();
+            card.querySelector('.btn-primary')?.click();
+        }
+    });
+
+    // Auto-focus card on render for immediate keyboard use
+    requestAnimationFrame(() => card.focus());
+}
+
+/**
  * Render an Action Card based on type
  * @param {Object} actionCard - Action card specification from intent-parser
  * @param {Object} options - { onAction, onDismiss, onFeedback }
@@ -120,6 +149,9 @@ function renderAddIdeaCard(data, options = {}) {
     // Bind event handlers
     bindAddIdeaCardEvents(card, data, options);
 
+    // Phase 3: Keyboard navigation
+    initKeyboardNav(card);
+
     return card;
 }
 
@@ -197,15 +229,44 @@ function bindAddIdeaCardEvents(card, data, options) {
         });
     }
 
-    // Feedback buttons
+    // Feedback buttons — Phase 3: Wire to API with visual confirmation
     card.querySelectorAll('.feedback-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
             const feedback = btn.dataset.feedback;
+
+            // Call external handler if provided
             options.onFeedback?.(feedback, data);
 
-            // Visual feedback
-            btn.style.transform = 'scale(1.2)';
-            setTimeout(() => btn.style.transform = '', 200);
+            // Send to API for learning
+            try {
+                await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardType: data.type || 'AddIdeaCard',
+                        intent: data.title,
+                        feedback,
+                        timestamp: Date.now()
+                    })
+                });
+            } catch (e) {
+                console.error('Failed to send feedback:', e);
+            }
+
+            // Visual confirmation
+            btn.style.transform = 'scale(1.3)';
+            const originalContent = btn.textContent;
+            btn.textContent = feedback === 'correct' ? '✓' : '✗';
+
+            setTimeout(() => {
+                btn.style.transform = '';
+                // Fade out the feedback area
+                const feedbackArea = card.querySelector('.card-feedback');
+                if (feedbackArea) {
+                    feedbackArea.style.opacity = '0.5';
+                    feedbackArea.style.pointerEvents = 'none';
+                }
+            }, 500);
         });
     });
 
@@ -275,6 +336,9 @@ function renderFindIdeaCard(data, options = {}) {
         card.remove();
         options.onDismiss?.();
     });
+
+    // Phase 3: Keyboard navigation
+    initKeyboardNav(card);
 
     return card;
 }
