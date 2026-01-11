@@ -460,6 +460,103 @@ app.post('/api/feedback', async (req, res) => {
     }
 });
 
+// ============================================
+// AI Drafts API — Auto-saved generated content
+// ============================================
+
+const AI_DRAFTS_PATH = path.join(__dirname, 'data', 'ai-drafts.json');
+
+// GET /api/ai-drafts — List all saved AI drafts
+app.get('/api/ai-drafts', async (req, res) => {
+    try {
+        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+
+        let drafts = [];
+        try {
+            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            drafts = JSON.parse(data);
+        } catch (e) { /* No file yet */ }
+
+        // Sort by timestamp descending (newest first)
+        drafts.sort((a, b) => b.timestamp - a.timestamp);
+
+        res.json(drafts);
+    } catch (error) {
+        console.error('Error loading AI drafts:', error);
+        res.status(500).json({ error: 'Failed to load drafts' });
+    }
+});
+
+// POST /api/ai-drafts — Save a new AI draft (called automatically on generation)
+app.post('/api/ai-drafts', async (req, res) => {
+    try {
+        const { content, prompt, template, project, persona, tokensUsed } = req.body;
+
+        if (!content) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+
+        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+
+        // Read existing drafts
+        let drafts = [];
+        try {
+            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            drafts = JSON.parse(data);
+        } catch (e) { /* No file yet */ }
+
+        // Add new draft
+        const newDraft = {
+            id: Date.now(),
+            content,
+            prompt: prompt || '',
+            template: template || 'thread',
+            project: project || null,
+            persona: persona || 'jester-sage',
+            tokensUsed: tokensUsed || 0,
+            timestamp: Date.now(),
+            status: 'draft'  // draft, copied, published
+        };
+
+        drafts.push(newDraft);
+
+        // Keep only last 100 drafts
+        if (drafts.length > 100) {
+            drafts = drafts.slice(-100);
+        }
+
+        await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(drafts, null, 2));
+
+        res.json({ success: true, draft: newDraft, total: drafts.length });
+    } catch (error) {
+        console.error('Error saving AI draft:', error);
+        res.status(500).json({ error: 'Failed to save draft' });
+    }
+});
+
+// DELETE /api/ai-drafts/:id — Delete a draft
+app.delete('/api/ai-drafts/:id', async (req, res) => {
+    try {
+        const draftId = parseInt(req.params.id);
+
+        let drafts = [];
+        try {
+            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            drafts = JSON.parse(data);
+        } catch (e) {
+            return res.status(404).json({ error: 'No drafts found' });
+        }
+
+        drafts = drafts.filter(d => d.id !== draftId);
+        await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(drafts, null, 2));
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting draft:', error);
+        res.status(500).json({ error: 'Failed to delete draft' });
+    }
+});
+
 // GET /api/buddy-message — Proactive buddy observation
 app.get('/api/buddy-message', async (req, res) => {
     try {
@@ -724,6 +821,28 @@ app.post('/api/content/generate', async (req, res) => {
             { prompt, template, persona, project },
             context
         );
+
+        // Auto-save draft for history/learning
+        try {
+            const draftsData = await fs.readFile(AI_DRAFTS_PATH, 'utf-8').catch(() => '[]');
+            const drafts = JSON.parse(draftsData);
+            drafts.push({
+                id: Date.now(),
+                content: result.content,
+                prompt,
+                template: template || 'thread',
+                project: project || null,
+                persona: persona || 'jester-sage',
+                tokensUsed: result.metadata?.tokensUsed || 0,
+                timestamp: Date.now(),
+                status: 'draft'
+            });
+            // Keep last 100
+            const trimmed = drafts.slice(-100);
+            await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(trimmed, null, 2));
+        } catch (e) {
+            console.error('Failed to auto-save draft:', e);
+        }
 
         res.json({
             success: true,
