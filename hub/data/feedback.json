@@ -28,5 +28,11 @@
     "intent": "давай пост о солобадии первый, приветственный в твиттер",
     "feedback": "correct",
     "timestamp": 1768161966276
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "сгенерим пост новый для солобади",
+    "feedback": "correct",
+    "timestamp": 1768247209160
   }
 ]
