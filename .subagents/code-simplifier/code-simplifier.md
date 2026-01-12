@@ -50,6 +50,16 @@ wc -l hub/*.js | sort -rn
 git diff HEAD~5 --name-only
 ```
 
+**Skip criteria** (don't refactor if):
+- File < 150 LOC with flat structure
+- File was refactored in last 5 commits (`git log -5 --oneline -- <file>` shows `refactor:`)
+- File is config/constants only
+
+**Target criteria** (prioritize):
+- Files > 300 LOC
+- Files with recent feature commits but no recent refactoring
+- Duplicated patterns across files
+
 ### Phase 2: Plan (you)
 Write detailed plan:
 - What functions to extract/simplify
