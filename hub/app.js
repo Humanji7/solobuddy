@@ -1073,6 +1073,12 @@ chatInput.addEventListener('keydown', (e) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAllData();
+
+    // Check and trigger user onboarding for first-time users
+    if (typeof checkUserOnboarding === 'function') {
+        checkUserOnboarding();
+    }
+
     loadBuddyExpandState();
     checkGitHubStatus();
     handleOAuthCallback();
@@ -1528,12 +1534,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '<div class="my-post-item" data-id="' + post.id + '">' +
                     '<div class="my-post-content">' + escapedContent + '</div>' +
                     '<div class="my-post-meta">' +
-                        '<span class="my-post-platform">' + post.platform + '</span>' +
-                        (post.project ? '<span>📁 ' + post.project + '</span>' : '') +
-                        '<span>' + dateStr + '</span>' +
+                    '<span class="my-post-platform">' + post.platform + '</span>' +
+                    (post.project ? '<span>📁 ' + post.project + '</span>' : '') +
+                    '<span>' + dateStr + '</span>' +
                     '</div>' +
                     '<button class="my-post-delete" data-id="' + post.id + '" title="Delete">×</button>' +
-                '</div>';
+                    '</div>';
             }).join('');
 
         // Add delete handlers

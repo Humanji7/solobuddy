@@ -37,6 +37,7 @@ const chatRoutes = require('./routes/chat');
 const projectRoutes = require('./routes/projects');
 const githubRoutes = require('./routes/github');
 const postsRoutes = require('./routes/posts');
+const userRoutes = require('./routes/user');
 
 // Content: /api/session-log, /api/backlog, /api/drafts, /api/ai-drafts, etc.
 app.use('/api', contentRoutes);
@@ -53,6 +54,9 @@ app.use('/api/github', githubRoutes);
 
 // Posts: /api/posts (voice training dataset)
 app.use('/api/posts', postsRoutes);
+
+// User: /api/user-context (onboarding and settings)
+app.use('/api', userRoutes);
 
 // ============================================
 // Start Server

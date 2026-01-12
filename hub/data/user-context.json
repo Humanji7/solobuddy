@@ -1,0 +1,36 @@
+{
+    "onboarded": true,
+    "phase": "shotgun",
+    "projects": [],
+    "platforms": [
+        {
+            "id": "twitter",
+            "followers": 0
+        },
+        {
+            "id": "telegram",
+            "followers": 0
+        },
+        {
+            "id": "threads",
+            "followers": 0
+        },
+        {
+            "id": "youtube",
+            "followers": 0
+        }
+    ],
+    "skills": [
+        "ai_creator",
+        "developer",
+        "writer"
+    ],
+    "timePerDay": 45,
+    "goals": [
+        "discipline",
+        "networking",
+        "sales"
+    ],
+    "language": "ru",
+    "updatedAt": "2026-01-12T21:02:25.495Z"
+}
