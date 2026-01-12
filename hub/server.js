@@ -31,8 +31,43 @@ const PATHS = {
     ideas: path.join(__dirname, '..', 'ideas'),
     drafts: path.join(__dirname, '..', 'drafts'),
     sessionLog: path.join(__dirname, '..', 'ideas', 'session-log.md'),
-    backlog: path.join(__dirname, '..', 'ideas', 'backlog.md')
+    backlog: path.join(__dirname, '..', 'ideas', 'backlog.md'),
+    projects: path.join(__dirname, '..', 'data', 'projects.json'),
+    aiDrafts: path.join(__dirname, 'data', 'ai-drafts.json'),
+    dataDir: path.join(__dirname, 'data')
 };
+
+// ============================================
+// Helper Functions
+// ============================================
+
+async function loadProjectsConfig() {
+    try {
+        const data = await fs.readFile(PATHS.projects, 'utf-8');
+        const parsed = JSON.parse(data);
+        return parsed.projects || parsed;
+    } catch (e) {
+        return [];
+    }
+}
+
+async function findProjectByName(name) {
+    const projects = await loadProjectsConfig();
+    return projects.find(p => p.name.toLowerCase() === name.toLowerCase());
+}
+
+async function ensureDataDir() {
+    await fs.mkdir(PATHS.dataDir, { recursive: true });
+}
+
+async function loadJsonFile(filePath, defaultValue = []) {
+    try {
+        const data = await fs.readFile(filePath, 'utf-8');
+        return JSON.parse(data);
+    } catch (e) {
+        return defaultValue;
+    }
+}
 
 // Middleware
 app.use(express.json());
@@ -434,7 +469,7 @@ app.post('/api/feedback', async (req, res) => {
         const feedbackPath = path.join(__dirname, 'data', 'feedback.json');
 
         // Ensure data directory exists
-        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+        await ensureDataDir();
 
         // Read existing feedback
         let data = [];
@@ -465,16 +500,14 @@ app.post('/api/feedback', async (req, res) => {
 // AI Drafts API — Auto-saved generated content
 // ============================================
 
-const AI_DRAFTS_PATH = path.join(__dirname, 'data', 'ai-drafts.json');
-
 // GET /api/ai-drafts — List all saved AI drafts
 app.get('/api/ai-drafts', async (req, res) => {
     try {
-        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+        await ensureDataDir();
 
         let drafts = [];
         try {
-            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            const data = await fs.readFile(PATHS.aiDrafts, 'utf-8');
             drafts = JSON.parse(data);
         } catch (e) { /* No file yet */ }
 
@@ -497,12 +530,12 @@ app.post('/api/ai-drafts', async (req, res) => {
             return res.status(400).json({ error: 'Content is required' });
         }
 
-        await fs.mkdir(path.join(__dirname, 'data'), { recursive: true });
+        await ensureDataDir();
 
         // Read existing drafts
         let drafts = [];
         try {
-            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            const data = await fs.readFile(PATHS.aiDrafts, 'utf-8');
             drafts = JSON.parse(data);
         } catch (e) { /* No file yet */ }
 
@@ -526,7 +559,7 @@ app.post('/api/ai-drafts', async (req, res) => {
             drafts = drafts.slice(-100);
         }
 
-        await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(drafts, null, 2));
+        await fs.writeFile(PATHS.aiDrafts, JSON.stringify(drafts, null, 2));
 
         res.json({ success: true, draft: newDraft, total: drafts.length });
     } catch (error) {
@@ -542,14 +575,14 @@ app.delete('/api/ai-drafts/:id', async (req, res) => {
 
         let drafts = [];
         try {
-            const data = await fs.readFile(AI_DRAFTS_PATH, 'utf-8');
+            const data = await fs.readFile(PATHS.aiDrafts, 'utf-8');
             drafts = JSON.parse(data);
         } catch (e) {
             return res.status(404).json({ error: 'No drafts found' });
         }
 
         drafts = drafts.filter(d => d.id !== draftId);
-        await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(drafts, null, 2));
+        await fs.writeFile(PATHS.aiDrafts, JSON.stringify(drafts, null, 2));
 
         res.json({ success: true });
     } catch (error) {
@@ -592,13 +625,7 @@ app.post('/api/intent/parse', async (req, res) => {
 
     try {
         // Gather context for intent parsing
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        let projects = [];
-        try {
-            const projectsData = await fs.readFile(projectsPath, 'utf-8');
-            const parsed = JSON.parse(projectsData);
-            projects = parsed.projects || parsed;
-        } catch (e) { /* no projects */ }
+        const projects = await loadProjectsConfig();
 
         // Backlog items
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
@@ -640,31 +667,14 @@ app.post('/api/chat', async (req, res) => {
         // Gather Rich Context
         // ============================================
 
-        // 1. Projects
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        let projects = [];
-        try {
-            const projectsData = await fs.readFile(projectsPath, 'utf-8');
-            const parsed = JSON.parse(projectsData);
-            projects = parsed.projects || parsed;
-        } catch (e) {
-            // No projects file yet
-        }
+        const projects = await loadProjectsConfig();
 
-        // 2. Backlog
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        // 3. Session Log
-        let sessionLog = [];
-        try {
-            const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8');
-            sessionLog = parseSessionLog(sessionContent);
-        } catch (e) {
-            // No session log
-        }
+        const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8').catch(() => '');
+        const sessionLog = sessionContent ? parseSessionLog(sessionContent) : [];
 
-        // 4. Drafts
         let drafts = [];
         try {
             const files = await fs.readdir(PATHS.drafts);
@@ -672,12 +682,9 @@ app.post('/api/chat', async (req, res) => {
             drafts = await Promise.all(
                 mdFiles.map(filename => parseDraft(path.join(PATHS.drafts, filename)))
             );
-        } catch (e) {
-            // No drafts
-        }
+        } catch (e) { /* No drafts */ }
 
-        // 5. Git Activity (from watcher)
-        const { scanAllProjects, loadProjects, scanProject, getActivityStats } = require('./watcher');
+        const { loadProjects, scanProject, getActivityStats } = require('./watcher');
         let gitActivity = [];
         try {
             const allProjects = await loadProjects();
@@ -686,17 +693,9 @@ app.post('/api/chat', async (req, res) => {
                 const stats = getActivityStats(project.name, scanResult);
                 gitActivity.push(stats);
             }
-        } catch (e) {
-            // Watcher not available
-        }
+        } catch (e) { /* Watcher not available */ }
 
-        // 6. Buddy Message (current observation)
-        let buddyMessage = null;
-        try {
-            buddyMessage = await getBuddyMessage();
-        } catch (e) {
-            // No buddy message
-        }
+        const buddyMessage = await getBuddyMessage().catch(() => null);
 
         // ============================================
         // Build Full Context
@@ -744,29 +743,14 @@ app.post('/api/project-voice', async (req, res) => {
     }
 
     try {
-        // 1. Find project
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        let projects = [];
-        try {
-            const data = await fs.readFile(projectsPath, 'utf-8');
-            const parsed = JSON.parse(data);
-            projects = parsed.projects || parsed;
-        } catch (e) {
-            return res.status(404).json({ error: 'No projects configured' });
-        }
-
-        const project = projects.find(p =>
-            p.name.toLowerCase() === projectName.toLowerCase()
-        );
-
+        const project = await findProjectByName(projectName);
         if (!project) {
             return res.status(404).json({ error: `Project "${projectName}" not found` });
         }
 
-        // 2. Load soul (creates if not exists)
         let soul = await soulManager.loadSoul(project.name, project.path);
 
-        // 3. AUTO-EXTRACT personality from README if not yet extracted (Phase 2.2)
+        // Auto-extract personality from README if not yet extracted
         let extractionStatus = 'cached';
         if (!soul.personality && project.path) {
             console.log(`[Soul] First contact with ${project.name} — extracting personality from README...`);
@@ -789,25 +773,19 @@ app.post('/api/project-voice', async (req, res) => {
             }
         }
 
-        // 4. Get backlog for context
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        // 5. Get git activity for emotional interpretation
-        const { loadProjects, scanProject, getActivityStats } = require('./watcher');
-        let gitActivity = null;
-        try {
-            const scanResult = await scanProject(project.path);
-            gitActivity = getActivityStats(project.name, scanResult);
-        } catch (e) { /* no git activity */ }
+        const { scanProject, getActivityStats } = require('./watcher');
+        const gitActivity = await scanProject(project.path)
+            .then(result => getActivityStats(project.name, result))
+            .catch(() => null);
 
-        // 6. Build messages array
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // 7. Call Claude with project voice + soul + gitActivity
         const response = await sendProjectVoice(project, messages, {
             backlogItems,
             soul,
@@ -866,23 +844,15 @@ app.get('/api/project-soul/:name', async (req, res) => {
     }
 });
 
-// POST /api/project-soul/:name/extract — Force re-extraction of personality from README (Phase 2.2)
+// POST /api/project-soul/:name/extract — Force re-extraction of personality from README
 app.post('/api/project-soul/:name/extract', async (req, res) => {
     const { name } = req.params;
 
     try {
-        // Find project to get path
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        const data = await fs.readFile(projectsPath, 'utf-8');
-        const parsed = JSON.parse(data);
-        const projects = parsed.projects || parsed;
-
-        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
-
+        const project = await findProjectByName(name);
         if (!project) {
             return res.status(404).json({ error: `Project "${name}" not found` });
         }
-
         if (!project.path) {
             return res.status(400).json({ error: `Project "${name}" has no path configured` });
         }
@@ -911,24 +881,16 @@ app.post('/api/project-soul/:name/extract', async (req, res) => {
     }
 });
 
-// GET /api/project-sensitivity/:name — Check if project needs SOUL onboarding (Phase 2.7)
+// GET /api/project-sensitivity/:name — Check if project needs SOUL onboarding
 app.get('/api/project-sensitivity/:name', async (req, res) => {
     const { name } = req.params;
     const { getSensitivity } = require('./sensitivity-detector');
 
     try {
-        // Find project to get path
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        const data = await fs.readFile(projectsPath, 'utf-8');
-        const parsed = JSON.parse(data);
-        const projects = parsed.projects || parsed;
-
-        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
-
+        const project = await findProjectByName(name);
         if (!project) {
             return res.status(404).json({ error: `Project "${name}" not found` });
         }
-
         if (!project.path) {
             return res.status(400).json({ error: `Project "${name}" has no path configured` });
         }
@@ -951,7 +913,7 @@ app.get('/api/project-sensitivity/:name', async (req, res) => {
     }
 });
 
-// POST /api/project-soul/:name/generate — Generate SOUL from onboarding wizard selections (Phase 2.7)
+// POST /api/project-soul/:name/generate — Generate SOUL from onboarding wizard selections
 app.post('/api/project-soul/:name/generate', async (req, res) => {
     const { name } = req.params;
     const { selections, saveToRepo } = req.body;
@@ -961,14 +923,7 @@ app.post('/api/project-soul/:name/generate', async (req, res) => {
     }
 
     try {
-        // Find project to get path
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        const data = await fs.readFile(projectsPath, 'utf-8');
-        const parsed = JSON.parse(data);
-        const projects = parsed.projects || parsed;
-
-        const project = projects.find(p => p.name.toLowerCase() === name.toLowerCase());
-
+        const project = await findProjectByName(name);
         if (!project) {
             return res.status(404).json({ error: `Project "${name}" not found` });
         }
@@ -1020,7 +975,7 @@ app.post('/api/project-soul/:name/generate', async (req, res) => {
     }
 });
 
-// POST /api/content/generate — Generate BIP content with personas and templates (Phase 4.1)
+// POST /api/content/generate — Generate BIP content with personas and templates
 app.post('/api/content/generate', async (req, res) => {
     const { prompt, template, persona, project } = req.body;
 
@@ -1029,35 +984,15 @@ app.post('/api/content/generate', async (req, res) => {
     }
 
     try {
-        // ============================================
-        // Gather Rich Context (same as chat)
-        // ============================================
+        // Gather context (same structure as /api/chat)
+        const projects = await loadProjectsConfig();
 
-        // 1. Projects
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        let projects = [];
-        try {
-            const projectsData = await fs.readFile(projectsPath, 'utf-8');
-            const parsed = JSON.parse(projectsData);
-            projects = parsed.projects || parsed;
-        } catch (e) {
-            // No projects file yet
-        }
-
-        // 2. Backlog
         const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
         const backlogItems = parseBacklog(backlogContent);
 
-        // 3. Session Log
-        let sessionLog = [];
-        try {
-            const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8');
-            sessionLog = parseSessionLog(sessionContent);
-        } catch (e) {
-            // No session log
-        }
+        const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8').catch(() => '');
+        const sessionLog = sessionContent ? parseSessionLog(sessionContent) : [];
 
-        // 4. Drafts
         let drafts = [];
         try {
             const files = await fs.readdir(PATHS.drafts);
@@ -1065,11 +1000,8 @@ app.post('/api/content/generate', async (req, res) => {
             drafts = await Promise.all(
                 mdFiles.map(filename => parseDraft(path.join(PATHS.drafts, filename)))
             );
-        } catch (e) {
-            // No drafts
-        }
+        } catch (e) { /* No drafts */ }
 
-        // 5. Git Activity (from watcher)
         const { loadProjects, scanProject, getActivityStats } = require('./watcher');
         let gitActivity = [];
         try {
@@ -1079,21 +1011,10 @@ app.post('/api/content/generate', async (req, res) => {
                 const stats = getActivityStats(proj.name, scanResult);
                 gitActivity.push(stats);
             }
-        } catch (e) {
-            // Watcher not available
-        }
+        } catch (e) { /* Watcher not available */ }
 
-        // 6. Buddy Message
-        let buddyMessage = null;
-        try {
-            buddyMessage = await getBuddyMessage();
-        } catch (e) {
-            // No buddy message
-        }
+        const buddyMessage = await getBuddyMessage().catch(() => null);
 
-        // ============================================
-        // Build Context and Generate Content
-        // ============================================
         const context = {
             projects,
             backlogItems,
@@ -1110,7 +1031,7 @@ app.post('/api/content/generate', async (req, res) => {
 
         // Auto-save draft for history/learning
         try {
-            const draftsData = await fs.readFile(AI_DRAFTS_PATH, 'utf-8').catch(() => '[]');
+            const draftsData = await fs.readFile(PATHS.aiDrafts, 'utf-8').catch(() => '[]');
             const drafts = JSON.parse(draftsData);
             drafts.push({
                 id: Date.now(),
@@ -1125,7 +1046,7 @@ app.post('/api/content/generate', async (req, res) => {
             });
             // Keep last 100
             const trimmed = drafts.slice(-100);
-            await fs.writeFile(AI_DRAFTS_PATH, JSON.stringify(trimmed, null, 2));
+            await fs.writeFile(PATHS.aiDrafts, JSON.stringify(trimmed, null, 2));
         } catch (e) {
             console.error('Failed to auto-save draft:', e);
         }
@@ -1248,17 +1169,11 @@ app.get('/api/github/repos', async (req, res) => {
         const repos = await getUserRepos(token);
         const reposWithLocal = await matchLocalRepos(repos);
 
-        // Read projects.json to mark already connected repos
-        let connectedUrls = new Set();
-        try {
-            const projectsData = await fs.readFile(
-                path.join(__dirname, '..', 'data', 'projects.json'), 'utf-8'
-            );
-            const { projects = [] } = JSON.parse(projectsData);
-            projects.forEach(p => {
-                if (p.github) connectedUrls.add(normalizeGitUrl(p.github));
-            });
-        } catch (e) { /* no projects.json yet */ }
+        // Mark already connected repos
+        const existingProjects = await loadProjectsConfig();
+        const connectedUrls = new Set(
+            existingProjects.filter(p => p.github).map(p => normalizeGitUrl(p.github))
+        );
 
         // Add alreadyConnected flag
         reposWithLocal.forEach(repo => {
@@ -1344,10 +1259,7 @@ app.post('/api/local/connect', async (req, res) => {
 // GET /api/projects — Get all connected projects (validates path existence)
 app.get('/api/projects', async (req, res) => {
     try {
-        const projectsPath = path.join(__dirname, '..', 'data', 'projects.json');
-        const data = await fs.readFile(projectsPath, 'utf-8');
-        const parsed = JSON.parse(data);
-        const allProjects = parsed.projects || parsed;
+        const allProjects = await loadProjectsConfig();
 
         // Validate each project's path exists
         const validatedProjects = [];
