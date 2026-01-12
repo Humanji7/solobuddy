@@ -2,35 +2,54 @@
 
 ## Overview
 
-SoloBuddy is a Node.js web application with vanilla frontend.
+SoloBuddy Hub — Node.js web application with vanilla frontend and Claude API integration.
 
 ## Backend
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Runtime | Node.js | 25.x |
+| Runtime | Node.js | 22.x LTS |
 | Framework | Express | 4.21 |
-| HTTP Client | Axios | 1.6 |
-| Session | express-session | 1.17 |
-| Environment | dotenv | 16.3 |
+| HTTP Client | Axios | 1.13 |
+| Session | express-session | 1.18 |
+| Environment | dotenv | 17.2 |
 
-### Key Files
+### Architecture
 
-- `hub/server.js` — Main server, API routes
-- `hub/watcher.js` — Git watcher for buddy messages  
-- `hub/github-api.js` — GitHub OAuth & repo matching
+```
+server.js (entry point)
+    ├── routes/
+    │   ├── chat.js      → /api/chat, /api/intent/parse
+    │   ├── content.js   → /api/session-log, /api/backlog, /api/drafts
+    │   ├── projects.js  → /api/projects, /api/project-voice, /api/project-soul
+    │   └── github.js    → /auth/github, /api/github/*
+    └── modules/
+        ├── config.js           — Paths, helpers
+        ├── chat-api.js         — Claude API integration
+        ├── prompt-builder.js   — System prompt construction
+        ├── intent-parser.js    — Intent Recognition Layer
+        ├── parsing.js          — Markdown parsers
+        ├── watcher.js          — Git activity tracking
+        ├── github-api.js       — GitHub OAuth
+        ├── soul-manager.js     — Project soul persistence
+        ├── soul-onboarding.js  — Soul creation wizard
+        └── sensitivity-detector.js — Soul onboarding trigger
+```
 
 ### API Routes
 
 | Route | Method | Description |
 |-------|--------|-------------|
+| `/api/chat` | POST | Chat with Claude |
+| `/api/intent/parse` | POST | Parse user intent |
 | `/api/session-log` | GET | Session log entries |
 | `/api/backlog` | GET/POST | Ideas backlog |
 | `/api/drafts` | GET | Draft documents |
-| `/api/buddy-message` | GET | Proactive buddy message |
+| `/api/projects` | GET | Registered projects |
+| `/api/project-voice` | POST | Talk to project persona |
+| `/api/project-soul/:name` | GET | Get project soul |
 | `/auth/github` | GET | OAuth redirect |
 | `/api/github/repos` | GET | User repositories |
-| `/api/github/connect` | POST | Connect repos to monitoring |
 
 ---
 
@@ -45,9 +64,10 @@ SoloBuddy is a Node.js web application with vanilla frontend.
 
 ### Key Files
 
-- `hub/index.html` — Main page
+- `hub/index.html` — Main page (SPA shell)
 - `hub/styles.css` — "Warm Hearth" theme
 - `hub/app.js` — UI logic, API calls
+- `hub/action-cards.js` — Action card components
 
 ### Design System
 
@@ -59,7 +79,9 @@ Theme: "Warm Hearth" — muted warm tones, minimal, breathing animations.
 
 | File | Format | Purpose |
 |------|--------|---------|
-| `data/projects.json` | JSON | Monitored Git projects |
+| `data/projects.json` | JSON | Registered projects |
+| `data/project-souls/*.json` | JSON | Soul configs per project |
+| `data/ai-drafts.json` | JSON | AI-generated drafts |
 | `ideas/backlog.md` | Markdown | Content ideas queue |
 | `ideas/session-log.md` | Markdown | Daily captured moments |
 | `drafts/*.md` | Markdown | Work-in-progress content |
@@ -70,4 +92,11 @@ Theme: "Warm Hearth" — muted warm tones, minimal, breathing animations.
 
 | Service | Purpose | Config |
 |---------|---------|--------|
-| GitHub OAuth | Repo discovery | `hub/.env` |
+| Claude API | Chat, content generation | `ANTHROPIC_API_KEY` |
+| GitHub OAuth | Repo discovery | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` |
+
+---
+
+## See Also
+
+- [PROJECT_INDEX.md](../PROJECT_INDEX.md) — Full codebase map with module details
