@@ -6,6 +6,21 @@
 const fs = require('fs').promises;
 const path = require('path');
 
+// ============================================
+// Shared Helpers
+// ============================================
+
+/**
+ * Read file safely, returning null/fallback if not found
+ */
+async function readFileSafe(filePath, fallback = null) {
+    try {
+        return await fs.readFile(filePath, 'utf-8');
+    } catch {
+        return fallback;
+    }
+}
+
 /**
  * Detect language of user input based on character analysis
  * @param {string} text - User's message
@@ -14,16 +29,11 @@ const path = require('path');
 function detectLanguage(text) {
     if (!text || typeof text !== 'string') return 'en';
 
-    // Count Cyrillic and Latin characters
-    const cyrillicMatch = text.match(/[\u0400-\u04FF]/g);
-    const latinMatch = text.match(/[a-zA-Z]/g);
-
-    const cyrillicCount = cyrillicMatch ? cyrillicMatch.length : 0;
-    const latinCount = latinMatch ? latinMatch.length : 0;
+    const cyrillicCount = (text.match(/[\u0400-\u04FF]/g) || []).length;
+    const latinCount = (text.match(/[a-zA-Z]/g) || []).length;
 
     // If significant Cyrillic presence (>30% of Latin), consider Russian
-    if (cyrillicCount > 0 && cyrillicCount > latinCount * 0.3) return 'ru';
-    return 'en';
+    return (cyrillicCount > 0 && cyrillicCount > latinCount * 0.3) ? 'ru' : 'en';
 }
 
 /**
@@ -266,59 +276,40 @@ Guidelines:
     return prompt;
 }
 
+const DEFAULT_PERSONA_CONFIG = {
+    version: '1.0',
+    activePersona: 'jester-sage',
+    personas: {
+        'jester-sage': {
+            name: 'Jester-Sage',
+            description: 'Ironic sage in Timothy Leary style',
+            temperature: 0.8,
+            maxTokens: 1500
+        }
+    }
+};
+
 /**
  * Load persona configuration
- * @returns {Object} - Persona config
  */
 async function loadPersonaConfig() {
-    const configPath = path.join(__dirname, 'persona-config.json');
-    try {
-        const data = await fs.readFile(configPath, 'utf-8');
-        return JSON.parse(data);
-    } catch (e) {
-        // Default config if file doesn't exist
-        return {
-            version: '1.0',
-            activePersona: 'jester-sage',
-            personas: {
-                'jester-sage': {
-                    name: 'Jester-Sage',
-                    description: 'Ironic sage in Timothy Leary style',
-                    temperature: 0.8,
-                    maxTokens: 1500
-                }
-            }
-        };
-    }
+    const data = await readFileSafe(path.join(__dirname, 'persona-config.json'));
+    return data ? JSON.parse(data) : DEFAULT_PERSONA_CONFIG;
 }
 
 /**
  * Load persona system prompt from file
- * @param {string} personaId - Persona identifier
- * @returns {string} - Persona-specific prompt additions
  */
 async function loadPersonaPrompt(personaId) {
-    const promptPath = path.join(__dirname, 'prompts', `${personaId}.md`);
-    try {
-        return await fs.readFile(promptPath, 'utf-8');
-    } catch (e) {
-        return ''; // Fallback: no additional persona prompt
-    }
+    return await readFileSafe(path.join(__dirname, 'prompts', `${personaId}.md`), '');
 }
 
 /**
  * Load template from file
- * @param {string} templateName - Template name (without .md)
- * @returns {string|null} - Template content or null
  */
 async function loadTemplate(templateName) {
     if (!templateName) return null;
-    const templatePath = path.join(__dirname, 'templates', `${templateName}.md`);
-    try {
-        return await fs.readFile(templatePath, 'utf-8');
-    } catch (e) {
-        return null;
-    }
+    return await readFileSafe(path.join(__dirname, 'templates', `${templateName}.md`));
 }
 
 /**
@@ -350,6 +341,50 @@ async function buildContentPrompt(context, options = {}) {
     }
 
     return systemPrompt;
+}
+
+/**
+ * Build emotional state description from git activity
+ */
+function buildGitEmotionalState(gitActivity) {
+    const lines = ['## My Current Emotional State (from recent activity)\n'];
+
+    // Days silent → loneliness
+    const days = gitActivity.daysSilent;
+    if (days !== null && days !== undefined) {
+        if (days === 0) {
+            lines.push('- I feel ACTIVE and ALIVE — someone touched me today!');
+        } else if (days <= 2) {
+            lines.push(`- I feel okay — was worked on ${days} day(s) ago`);
+        } else if (days <= 7) {
+            lines.push(`- I feel a bit LONELY — it's been ${days} days since anyone visited me`);
+        } else {
+            lines.push(`- I feel FORGOTTEN — ${days} days of silence... does anyone remember me?`);
+        }
+    }
+
+    // Commits this week → energy level
+    const commits = gitActivity.commitsThisWeek;
+    if (commits > 10) {
+        lines.push(`- I'm BUZZING with energy — ${commits} commits this week!`);
+    } else if (commits > 3) {
+        lines.push(`- I feel productive — steady work happening (${commits} commits)`);
+    } else if (commits > 0) {
+        lines.push(`- I feel... quiet. Only ${commits} commits this week.`);
+    }
+
+    // Last commit message → micro-emotion
+    const msg = (gitActivity.lastCommitMessage || '').toLowerCase();
+    if (msg.includes('fix') || msg.includes('bug')) {
+        lines.push('- Last touch was a FIX — they healed something that was broken in me');
+    } else if (msg.includes('feat') || msg.includes('add')) {
+        lines.push('- Last touch added something NEW — I\'m growing!');
+    } else if (msg.includes('refactor') || msg.includes('clean')) {
+        lines.push('- Last touch was REFACTORING — they\'re rethinking who I am');
+    }
+
+    lines.push('\nUse these emotions naturally in your responses. Don\'t list them — FEEL them.\n');
+    return lines.join('\n') + '\n';
 }
 
 /**
@@ -426,47 +461,9 @@ Use these memories to be consistent. If user asks "remember?", reference these.
 `;
     }
 
-    // ============================================
     // Emotional Git Interpretation
-    // ============================================
     if (gitActivity) {
-        prompt += `## My Current Emotional State (from recent activity)
-`;
-        // Days silent → loneliness
-        if (gitActivity.daysSilent !== null && gitActivity.daysSilent !== undefined) {
-            if (gitActivity.daysSilent === 0) {
-                prompt += `- I feel ACTIVE and ALIVE — someone touched me today!\n`;
-            } else if (gitActivity.daysSilent <= 2) {
-                prompt += `- I feel okay — was worked on ${gitActivity.daysSilent} day(s) ago\n`;
-            } else if (gitActivity.daysSilent <= 7) {
-                prompt += `- I feel a bit LONELY — it's been ${gitActivity.daysSilent} days since anyone visited me\n`;
-            } else {
-                prompt += `- I feel FORGOTTEN — ${gitActivity.daysSilent} days of silence... does anyone remember me?\n`;
-            }
-        }
-
-        // Commits this week → energy level
-        if (gitActivity.commitsThisWeek > 10) {
-            prompt += `- I'm BUZZING with energy — ${gitActivity.commitsThisWeek} commits this week!\n`;
-        } else if (gitActivity.commitsThisWeek > 3) {
-            prompt += `- I feel productive — steady work happening (${gitActivity.commitsThisWeek} commits)\n`;
-        } else if (gitActivity.commitsThisWeek > 0) {
-            prompt += `- I feel... quiet. Only ${gitActivity.commitsThisWeek} commits this week.\n`;
-        }
-
-        // Last commit message → micro-emotion
-        if (gitActivity.lastCommitMessage) {
-            const msg = gitActivity.lastCommitMessage.toLowerCase();
-            if (msg.includes('fix') || msg.includes('bug')) {
-                prompt += `- Last touch was a FIX — they healed something that was broken in me\n`;
-            } else if (msg.includes('feat') || msg.includes('add')) {
-                prompt += `- Last touch added something NEW — I'm growing!\n`;
-            } else if (msg.includes('refactor') || msg.includes('clean')) {
-                prompt += `- Last touch was REFACTORING — they're rethinking who I am\n`;
-            }
-        }
-
-        prompt += `\nUse these emotions naturally in your responses. Don't list them — FEEL them.\n\n`;
+        prompt += buildGitEmotionalState(gitActivity);
     }
 
     // Add dreams/aspirations from backlog
