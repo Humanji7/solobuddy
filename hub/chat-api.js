@@ -9,6 +9,60 @@ const { buildSystemPrompt, buildContentPrompt, loadPersonaConfig, buildProjectVo
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+const ANTHROPIC_VERSION = '2023-06-01';
+
+// ============================================
+// Shared Helpers
+// ============================================
+
+/**
+ * Read file safely, returning null if not found or too short
+ */
+async function readFileSafe(filePath, minLength = 50) {
+    try {
+        const content = await fs.readFile(filePath, 'utf-8');
+        return content.length >= minLength ? content : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Call Claude API with standard headers
+ */
+async function callClaude(apiKey, { system, messages, maxTokens = 1024, temperature = 0.7 }) {
+    const response = await axios.post(
+        CLAUDE_API_URL,
+        {
+            model: CLAUDE_MODEL,
+            max_tokens: maxTokens,
+            temperature,
+            system,
+            messages
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': ANTHROPIC_VERSION
+            }
+        }
+    );
+    return response.data;
+}
+
+/**
+ * Get API key or throw
+ */
+function requireApiKey() {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+        const error = new Error('ANTHROPIC_API_KEY not configured');
+        error.status = 500;
+        throw error;
+    }
+    return apiKey;
+}
 
 // ============================================
 // Deep Knowledge Extraction (Phase 2.4)
@@ -27,62 +81,45 @@ async function collectProjectDocumentation(projectPath) {
     const sources = [];
     const chunks = [];
 
-    // Priority 1: docs/ folder (PRD, TRD, PHILOSOPHY, VISION, etc.)
+    // Helper to add file content with truncation
+    async function addFile(filePath, sourceName, maxChars) {
+        const content = await readFileSafe(filePath);
+        if (content) {
+            chunks.push(`=== ${sourceName} ===\n${content.slice(0, maxChars)}`);
+            sources.push(sourceName);
+            return true;
+        }
+        return false;
+    }
+
+    // Priority 1: docs/ folder
     const docsFolder = path.join(projectPath, 'docs');
     const docFiles = ['PHILOSOPHY.md', 'PRD.md', 'TRD.md', 'VISION.md',
         'ARCHITECTURE.md', 'PROJECT_BASE.md', 'DESIGN.md'];
-    try {
-        await fs.access(docsFolder);
-        for (const docFile of docFiles) {
-            try {
-                const content = await fs.readFile(path.join(docsFolder, docFile), 'utf-8');
-                if (content.length > 50) {
-                    chunks.push(`=== ${docFile} ===\n${content.slice(0, 2000)}`);
-                    sources.push(`docs/${docFile}`);
-                }
-            } catch (e) { /* file not found, skip */ }
-        }
-    } catch (e) { /* no docs/ folder */ }
+    for (const file of docFiles) {
+        await addFile(path.join(docsFolder, file), `docs/${file}`, 2000);
+    }
 
-    // Priority 2: .agent/prompts/ folder (Claude workflows)
+    // Priority 2: .agent/prompts/ folder (max 3 files)
     const agentPrompts = path.join(projectPath, '.agent', 'prompts');
     try {
         const files = await fs.readdir(agentPrompts);
-        const mdFiles = files.filter(f => f.endsWith('.md')).slice(0, 3); // Max 3 prompts
+        const mdFiles = files.filter(f => f.endsWith('.md')).slice(0, 3);
         for (const file of mdFiles) {
-            try {
-                const content = await fs.readFile(path.join(agentPrompts, file), 'utf-8');
-                if (content.length > 50) {
-                    chunks.push(`=== .agent/prompts/${file} ===\n${content.slice(0, 1000)}`);
-                    sources.push(`.agent/prompts/${file}`);
-                }
-            } catch (e) { /* skip */ }
+            await addFile(path.join(agentPrompts, file), `.agent/prompts/${file}`, 1000);
         }
-    } catch (e) { /* no .agent/prompts/ folder */ }
+    } catch { /* no .agent/prompts/ folder */ }
 
     // Priority 3: Root context files
     const contextFiles = ['CLAUDE.md', 'PROJECT.md', 'SOUL.md', 'HOOK.md'];
     for (const file of contextFiles) {
-        try {
-            const content = await fs.readFile(path.join(projectPath, file), 'utf-8');
-            if (content.length > 50) {
-                chunks.push(`=== ${file} ===\n${content.slice(0, 1500)}`);
-                sources.push(file);
-            }
-        } catch (e) { /* file not found */ }
+        await addFile(path.join(projectPath, file), file, 1500);
     }
 
-    // Priority 4: README.md (fallback, always include if available)
+    // Priority 4: README.md (first found wins)
     const readmeNames = ['README.md', 'readme.md', 'Readme.md'];
     for (const name of readmeNames) {
-        try {
-            const content = await fs.readFile(path.join(projectPath, name), 'utf-8');
-            if (content.length > 50) {
-                chunks.push(`=== ${name} ===\n${content.slice(0, 2000)}`);
-                sources.push(name);
-                break; // Only one README
-            }
-        } catch (e) { /* try next */ }
+        if (await addFile(path.join(projectPath, name), name, 2000)) break;
     }
 
     return {
@@ -90,6 +127,20 @@ async function collectProjectDocumentation(projectPath) {
         sources
     };
 }
+
+const PERSONALITY_EXTRACTION_SYSTEM = `You extract project personality from documentation.
+Analyze all provided docs and return ONLY valid JSON (no markdown, no explanation):
+{
+  "purpose": "1-2 sentences: what this project does and why it exists",
+  "tone": "one of: friendly, technical, playful, professional, artistic, experimental",
+  "techStack": "comma-separated list of main technologies",
+  "keyPhrases": ["3-5 distinctive phrases that capture the project's unique essence"],
+  "philosophy": "core beliefs/values (if found in docs, else null)",
+  "pains": "known challenges or frustrations mentioned (if found, else null)",
+  "dreams": "future aspirations or roadmap goals (if found, else null)"
+}
+
+Extract ACTUAL content from docs, not generic descriptions. Be specific.`;
 
 /**
  * Extract personality from project documentation using Claude (Phase 2.4: multi-source)
@@ -104,7 +155,7 @@ async function extractPersonalityFromDocs(projectPath, projectName) {
         return null;
     }
 
-    // Rate-limiting check
+    // Rate-limiting: prevent duplicate extractions
     if (extractingProjects.has(projectName)) {
         console.log(`[Soul] Already extracting personality for ${projectName}, skipping`);
         return null;
@@ -112,7 +163,6 @@ async function extractPersonalityFromDocs(projectPath, projectName) {
     extractingProjects.add(projectName);
 
     try {
-        // Collect documentation from all sources
         const { content, sources } = await collectProjectDocumentation(projectPath);
 
         if (!content || content.length < 100) {
@@ -122,42 +172,14 @@ async function extractPersonalityFromDocs(projectPath, projectName) {
 
         console.log(`[Soul] Collected docs for ${projectName}: ${sources.join(', ')} (${content.length} chars)`);
 
-        // Truncate to 8000 chars (expanded from 4000)
-        const truncated = content.slice(0, 8000);
+        const response = await callClaude(apiKey, {
+            system: PERSONALITY_EXTRACTION_SYSTEM,
+            messages: [{ role: 'user', content: `Extract personality from this project documentation:\n\n${content.slice(0, 8000)}` }],
+            maxTokens: 700,
+            temperature: 0.3
+        });
 
-        // Call Claude with expanded extraction prompt
-        const response = await axios.post(
-            CLAUDE_API_URL,
-            {
-                model: CLAUDE_MODEL,
-                max_tokens: 700,
-                temperature: 0.3,
-                system: `You extract project personality from documentation.
-Analyze all provided docs and return ONLY valid JSON (no markdown, no explanation):
-{
-  "purpose": "1-2 sentences: what this project does and why it exists",
-  "tone": "one of: friendly, technical, playful, professional, artistic, experimental",
-  "techStack": "comma-separated list of main technologies",
-  "keyPhrases": ["3-5 distinctive phrases that capture the project's unique essence"],
-  "philosophy": "core beliefs/values (if found in docs, else null)",
-  "pains": "known challenges or frustrations mentioned (if found, else null)",
-  "dreams": "future aspirations or roadmap goals (if found, else null)"
-}
-
-Extract ACTUAL content from docs, not generic descriptions. Be specific.`,
-                messages: [{ role: 'user', content: `Extract personality from this project documentation:\n\n${truncated}` }]
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
-                }
-            }
-        );
-
-        // Parse JSON (robust handling)
-        const text = response.data.content[0].text;
+        const text = response.content[0].text;
         const jsonMatch = text.match(/\{[\s\S]*\}/);
 
         if (!jsonMatch) {
@@ -166,8 +188,6 @@ Extract ACTUAL content from docs, not generic descriptions. Be specific.`,
         }
 
         const personality = JSON.parse(jsonMatch[0]);
-
-        // Add sources metadata
         personality._sources = sources;
 
         console.log(`[Soul] ✅ Extracted personality for ${projectName} from ${sources.length} sources:`,
@@ -187,46 +207,34 @@ Extract ACTUAL content from docs, not generic descriptions. Be specific.`,
 const extractPersonalityFromReadme = extractPersonalityFromDocs;
 
 /**
+ * Normalize message format for Claude API
+ */
+function normalizeMessages(messages, assistantRole = 'buddy') {
+    return messages.map(m => ({
+        role: m.role === assistantRole ? 'assistant' : m.role,
+        content: m.content || m.text
+    }));
+}
+
+/**
  * Send message to Claude API
  * @param {Array} messages - Chat history [{role: 'user'|'assistant', content: string}]
  * @param {Object} context - {projects: [], backlogItems: []}
  * @returns {Promise<string>} - Claude's response text
  */
 async function sendToClaude(messages, context) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not configured');
-    }
+    const apiKey = requireApiKey();
 
     // Get last user message for language detection
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
     const userMessage = lastUserMessage ? (lastUserMessage.content || lastUserMessage.text) : null;
 
-    const systemPrompt = buildSystemPrompt(context, { userMessage });
+    const response = await callClaude(apiKey, {
+        system: buildSystemPrompt(context, { userMessage }),
+        messages: normalizeMessages(messages)
+    });
 
-
-    const response = await axios.post(
-        CLAUDE_API_URL,
-        {
-            model: CLAUDE_MODEL,
-            max_tokens: 1024,
-            system: systemPrompt,
-            messages: messages.map(m => ({
-                role: m.role === 'buddy' ? 'assistant' : m.role,
-                content: m.content || m.text
-            }))
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            }
-        }
-    );
-
-    return response.data.content[0].text;
+    return response.content[0].text;
 }
 
 /**
@@ -236,14 +244,7 @@ async function sendToClaude(messages, context) {
  * @returns {Promise<Object>} - {content, metadata}
  */
 async function generateContent(options, context) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
-        const error = new Error('ANTHROPIC_API_KEY not configured');
-        error.status = 500;
-        throw error;
-    }
-
+    const apiKey = requireApiKey();
     const { prompt, template, persona, project } = options;
 
     // Load persona config to get settings
@@ -254,7 +255,6 @@ async function generateContent(options, context) {
         maxTokens: 1500
     };
 
-    // Build content-generation system prompt
     const systemPrompt = await buildContentPrompt(context, {
         template,
         persona: personaId,
@@ -271,31 +271,17 @@ async function generateContent(options, context) {
 
     const startTime = Date.now();
 
-    const response = await axios.post(
-        CLAUDE_API_URL,
-        {
-            model: CLAUDE_MODEL,
-            max_tokens: personaSettings.maxTokens,
-            temperature: personaSettings.temperature,
-            system: systemPrompt,
-            messages: [
-                { role: 'user', content: prompt }
-            ]
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            }
-        }
-    );
+    const response = await callClaude(apiKey, {
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: personaSettings.maxTokens,
+        temperature: personaSettings.temperature
+    });
 
-    const content = response.data.content[0].text;
-    const usage = response.data.usage || {};
+    const usage = response.usage || {};
 
     return {
-        content,
+        content: response.content[0].text,
         metadata: {
             persona: personaId,
             template: template || null,
@@ -315,36 +301,16 @@ async function generateContent(options, context) {
  * @returns {Promise<string>} - Response from project persona
  */
 async function sendProjectVoice(project, messages, context = {}) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = requireApiKey();
 
-    if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not configured');
-    }
+    const response = await callClaude(apiKey, {
+        system: buildProjectVoicePrompt(project, context),
+        messages: normalizeMessages(messages, 'project'),
+        maxTokens: 512,
+        temperature: 0.9  // Higher for more personality
+    });
 
-    const systemPrompt = buildProjectVoicePrompt(project, context);
-
-    const response = await axios.post(
-        CLAUDE_API_URL,
-        {
-            model: CLAUDE_MODEL,
-            max_tokens: 512,
-            temperature: 0.9,  // Higher for more personality
-            system: systemPrompt,
-            messages: messages.map(m => ({
-                role: m.role === 'project' ? 'assistant' : m.role,
-                content: m.content || m.text
-            }))
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            }
-        }
-    );
-
-    return response.data.content[0].text;
+    return response.content[0].text;
 }
 
 // SOUL Knobs configuration (used for both frontend and generation prompts)
@@ -383,56 +349,9 @@ const SOUL_KNOBS = {
     }
 };
 
-/**
- * Generate SOUL.md content from onboarding wizard selections (Phase 2.7)
- * @param {string} projectName - Project name 
- * @param {Object} selections - User's wizard selections
- * @param {string} projectPath - Absolute path to project (for docs context)
- * @returns {Promise<{success: boolean, soulMd?: string, personality?: Object, error?: string}>}
- */
-async function generateSoulFromSelections(projectName, selections, projectPath) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+const SOUL_GENERATION_SYSTEM = 'You are a creative writer who gives projects unique, memorable personalities. Your SOUL.md files are poetic yet specific.';
 
-    if (!apiKey) {
-        return { success: false, error: 'ANTHROPIC_API_KEY not configured' };
-    }
-
-    try {
-        // Collect project docs for context
-        let docsContext = '';
-        if (projectPath) {
-            const { content } = await collectProjectDocumentation(projectPath);
-            docsContext = content.slice(0, 4000); // Limit for this use case
-        }
-
-        // Build selection description for prompt
-        const archetypeInfo = SOUL_KNOBS.archetype[selections.archetype] || { label: selections.archetype, description: '' };
-        const toneList = (selections.tone || []).map(t => SOUL_KNOBS.tone[t] || t).join(', ');
-        const whenAbandoned = SOUL_KNOBS.emotionalBaseline.whenAbandoned[selections.emotionalBaseline?.whenAbandoned]
-            || selections.emotionalBaseline?.whenAbandoned || 'waits patiently';
-        const whenActive = SOUL_KNOBS.emotionalBaseline.whenActive[selections.emotionalBaseline?.whenActive]
-            || selections.emotionalBaseline?.whenActive || 'focused';
-
-        const forbiddenList = [
-            ...(selections.forbidden || []).map(f => SOUL_KNOBS.forbidden[f] || f),
-            ...(selections.customForbidden || [])
-        ].filter(Boolean);
-
-        const prompt = `Create a SOUL.md file for the project "${projectName}".
-
-USER SELECTED THESE ATTRIBUTES:
-- Archetype: ${archetypeInfo.label} (${archetypeInfo.description})
-- Tone: ${toneList || 'not specified'}
-- When abandoned: ${whenAbandoned}
-- When active: ${whenActive}
-- Forbidden phrases: ${forbiddenList.length > 0 ? forbiddenList.join(', ') : 'none specified'}
-
-PROJECT DOCUMENTATION CONTEXT:
-${docsContext || 'No documentation available'}
-
-GENERATE A COMPLETE SOUL.md FILE with these sections:
-
-# SOUL.md
+const SOUL_MD_TEMPLATE = `# SOUL.md
 
 ## Identity
 - Name: (project name)
@@ -463,33 +382,79 @@ GENERATE A COMPLETE SOUL.md FILE with these sections:
 (future aspirations - extract from docs or infer)
 
 ## Pains
-(challenges or frustrations - extract from docs or infer)
+(challenges or frustrations - extract from docs or infer)`;
+
+/**
+ * Extract section content from markdown
+ */
+function extractSection(md, sectionName) {
+    const match = md.match(new RegExp(`## ${sectionName}\\n+([\\s\\S]*?)(?=\\n## |$)`));
+    return match ? match[1].trim() : null;
+}
+
+/**
+ * Generate SOUL.md content from onboarding wizard selections (Phase 2.7)
+ * @param {string} projectName - Project name
+ * @param {Object} selections - User's wizard selections
+ * @param {string} projectPath - Absolute path to project (for docs context)
+ * @returns {Promise<{success: boolean, soulMd?: string, personality?: Object, error?: string}>}
+ */
+async function generateSoulFromSelections(projectName, selections, projectPath) {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: 'ANTHROPIC_API_KEY not configured' };
+    }
+
+    try {
+        // Collect project docs for context
+        let docsContext = '';
+        if (projectPath) {
+            const { content } = await collectProjectDocumentation(projectPath);
+            docsContext = content.slice(0, 4000);
+        }
+
+        // Resolve selections to labels
+        const archetypeInfo = SOUL_KNOBS.archetype[selections.archetype] || { label: selections.archetype, description: '' };
+        const toneList = (selections.tone || []).map(t => SOUL_KNOBS.tone[t] || t).join(', ');
+        const whenAbandoned = SOUL_KNOBS.emotionalBaseline.whenAbandoned[selections.emotionalBaseline?.whenAbandoned]
+            || selections.emotionalBaseline?.whenAbandoned || 'waits patiently';
+        const whenActive = SOUL_KNOBS.emotionalBaseline.whenActive[selections.emotionalBaseline?.whenActive]
+            || selections.emotionalBaseline?.whenActive || 'focused';
+        const forbiddenList = [
+            ...(selections.forbidden || []).map(f => SOUL_KNOBS.forbidden[f] || f),
+            ...(selections.customForbidden || [])
+        ].filter(Boolean);
+
+        const prompt = `Create a SOUL.md file for the project "${projectName}".
+
+USER SELECTED THESE ATTRIBUTES:
+- Archetype: ${archetypeInfo.label} (${archetypeInfo.description})
+- Tone: ${toneList || 'not specified'}
+- When abandoned: ${whenAbandoned}
+- When active: ${whenActive}
+- Forbidden phrases: ${forbiddenList.length > 0 ? forbiddenList.join(', ') : 'none specified'}
+
+PROJECT DOCUMENTATION CONTEXT:
+${docsContext || 'No documentation available'}
+
+GENERATE A COMPLETE SOUL.md FILE with these sections:
+
+${SOUL_MD_TEMPLATE}
 
 Be CREATIVE and give this project a UNIQUE voice. Write in a style that matches the selected archetype and tone.
 If docs are in Russian, write the SOUL.md in Russian.
 Return ONLY the markdown content, no explanations.`;
 
-        const response = await axios.post(
-            CLAUDE_API_URL,
-            {
-                model: CLAUDE_MODEL,
-                max_tokens: 1500,
-                temperature: 0.8,
-                system: 'You are a creative writer who gives projects unique, memorable personalities. Your SOUL.md files are poetic yet specific.',
-                messages: [{ role: 'user', content: prompt }]
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01'
-                }
-            }
-        );
+        const response = await callClaude(apiKey, {
+            system: SOUL_GENERATION_SYSTEM,
+            messages: [{ role: 'user', content: prompt }],
+            maxTokens: 1500,
+            temperature: 0.8
+        });
 
-        const soulMd = response.data.content[0].text;
+        const soulMd = response.content[0].text;
 
-        // Parse the generated SOUL.md into personality object
+        // Build personality object
         const personality = {
             archetype: selections.archetype,
             tone: selections.tone || [],
@@ -499,16 +464,14 @@ Return ONLY the markdown content, no explanations.`;
             _generatedAt: new Date().toISOString()
         };
 
-        // Extract purpose from generated content if possible
-        const purposeMatch = soulMd.match(/## Purpose\n+([\s\S]*?)(?=\n## |$)/);
-        if (purposeMatch) {
-            personality.purpose = purposeMatch[1].trim().slice(0, 500);
-        }
+        // Extract purpose from generated content
+        const purpose = extractSection(soulMd, 'Purpose');
+        if (purpose) personality.purpose = purpose.slice(0, 500);
 
         // Extract key phrases
-        const phrasesMatch = soulMd.match(/## Key Phrases\n+([\s\S]*?)(?=\n## |$)/);
-        if (phrasesMatch) {
-            const phrases = phrasesMatch[1].match(/[-•]\s*(.+)/g);
+        const phrasesSection = extractSection(soulMd, 'Key Phrases');
+        if (phrasesSection) {
+            const phrases = phrasesSection.match(/[-•]\s*(.+)/g);
             if (phrases) {
                 personality.keyPhrases = phrases.map(p => p.replace(/^[-•]\s*/, '').trim());
             }
@@ -516,11 +479,7 @@ Return ONLY the markdown content, no explanations.`;
 
         console.log(`[Soul] ✅ Generated SOUL.md for ${projectName} (${soulMd.length} chars)`);
 
-        return {
-            success: true,
-            soulMd,
-            personality
-        };
+        return { success: true, soulMd, personality };
 
     } catch (error) {
         console.error(`[Soul] Generation failed for ${projectName}:`, error.message);
