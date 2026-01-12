@@ -5,6 +5,8 @@
  * Calls Claude to disambiguate user intent.
  */
 
+const axios = require('axios');
+
 const INTENT_TYPES = [
     'add_to_backlog',
     'find_idea',
@@ -46,8 +48,6 @@ async function classifyIntent(message, context = {}) {
     }
 
     try {
-        const axios = require('axios');
-
         const response = await axios.post(
             'https://api.anthropic.com/v1/messages',
             {
@@ -62,7 +62,8 @@ async function classifyIntent(message, context = {}) {
                     'Content-Type': 'application/json',
                     'x-api-key': apiKey,
                     'anthropic-version': '2023-06-01'
-                }
+                },
+                timeout: 30000
             }
         );
 
@@ -74,7 +75,13 @@ async function classifyIntent(message, context = {}) {
             return { type: 'unknown', confidence: 0 };
         }
 
-        const result = JSON.parse(jsonMatch[0]);
+        let result;
+        try {
+            result = JSON.parse(jsonMatch[0]);
+        } catch (parseError) {
+            console.warn('[LLM Classifier] JSON parse error:', parseError.message);
+            return { type: 'unknown', confidence: 0 };
+        }
 
         // Validate type
         if (!INTENT_TYPES.includes(result.type)) {
