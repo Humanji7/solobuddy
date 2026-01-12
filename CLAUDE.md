@@ -11,6 +11,15 @@ cd hub && npm start
 ```
 → http://localhost:3000
 
+## Server
+
+Before starting, check if already running:
+```bash
+lsof -i :3000
+```
+- If busy → don't start (or `kill <PID>` first)
+- If free → start normally
+
 ## Project State
 
 | What | Where |
