@@ -1,0 +1,120 @@
+/**
+ * Chat routes - chat with Claude, intent parsing
+ */
+
+const express = require('express');
+const fs = require('fs').promises;
+const path = require('path');
+const router = express.Router();
+
+const { PATHS, loadProjectsConfig } = require('../config');
+const { parseSessionLog, parseBacklog, parseDraft } = require('../parsing');
+const { parseIntent } = require('../intent-parser');
+const { sendToClaude } = require('../chat-api');
+const { getBuddyMessage } = require('../watcher');
+
+// POST /api/intent/parse
+router.post('/intent/parse', async (req, res) => {
+    const { message } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+        const projects = await loadProjectsConfig();
+
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        const { loadProjects, scanProject, getActivityStats } = require('../watcher');
+        let gitActivity = [];
+        try {
+            const allProjects = await loadProjects();
+            for (const project of allProjects.slice(0, 10)) {
+                const scanResult = await scanProject(project.path);
+                const stats = getActivityStats(project.name, scanResult);
+                gitActivity.push(stats);
+            }
+        } catch (e) { /* watcher not available */ }
+
+        const context = { backlogItems, projects, gitActivity };
+        const result = parseIntent(message, context);
+
+        res.json(result);
+    } catch (error) {
+        console.error('Intent parse error:', error.message);
+        res.status(500).json({ error: 'Failed to parse intent' });
+    }
+});
+
+// POST /api/chat
+router.post('/chat', async (req, res) => {
+    const { message, history = [] } = req.body;
+
+    if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+    }
+
+    try {
+        const projects = await loadProjectsConfig();
+
+        const backlogContent = await fs.readFile(PATHS.backlog, 'utf-8').catch(() => '');
+        const backlogItems = parseBacklog(backlogContent);
+
+        const sessionContent = await fs.readFile(PATHS.sessionLog, 'utf-8').catch(() => '');
+        const sessionLog = sessionContent ? parseSessionLog(sessionContent) : [];
+
+        let drafts = [];
+        try {
+            const files = await fs.readdir(PATHS.drafts);
+            const mdFiles = files.filter(f => f.endsWith('.md') && f !== 'README.md');
+            drafts = await Promise.all(
+                mdFiles.map(filename => parseDraft(path.join(PATHS.drafts, filename)))
+            );
+        } catch (e) { /* No drafts */ }
+
+        const { loadProjects, scanProject, getActivityStats } = require('../watcher');
+        let gitActivity = [];
+        try {
+            const allProjects = await loadProjects();
+            for (const project of allProjects) {
+                const scanResult = await scanProject(project.path);
+                const stats = getActivityStats(project.name, scanResult);
+                gitActivity.push(stats);
+            }
+        } catch (e) { /* Watcher not available */ }
+
+        const buddyMessage = await getBuddyMessage().catch(() => null);
+
+        const context = {
+            projects,
+            backlogItems,
+            sessionLog,
+            drafts,
+            gitActivity,
+            buddyMessage
+        };
+
+        const { intentType, actionCard, confidence } = parseIntent(message, context);
+
+        const messages = [
+            ...history,
+            { role: 'user', content: message }
+        ];
+
+        const response = await sendToClaude(messages, context);
+
+        res.json({
+            response,
+            actionCard,
+            intent: intentType,
+            confidence
+        });
+    } catch (error) {
+        console.error('Chat error:', error.message);
+        res.status(500).json({ error: error.message || 'Failed to get response' });
+    }
+});
+
+module.exports = router;
