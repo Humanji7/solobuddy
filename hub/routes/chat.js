@@ -9,9 +9,10 @@ const router = express.Router();
 
 const { PATHS, loadProjectsConfig } = require('../config');
 const { parseSessionLog, parseBacklog, parseDraft } = require('../parsing');
-const { parseIntent } = require('../intent-parser');
+const { parseIntent, buildActionCard, extractEntities, findContextualLinks } = require('../intent-parser');
 const { sendToClaude } = require('../chat-api');
 const { getBuddyMessage } = require('../watcher');
+const { classifyIntent } = require('../llm-intent-classifier');
 
 // POST /api/intent/parse
 router.post('/intent/parse', async (req, res) => {
@@ -39,7 +40,39 @@ router.post('/intent/parse', async (req, res) => {
         } catch (e) { /* watcher not available */ }
 
         const context = { backlogItems, projects, gitActivity };
-        const result = parseIntent(message, context);
+
+        // Step 1: Try regex-based detection
+        let result = parseIntent(message, context);
+
+        // Step 2: Hybrid logic
+        if (result.confidence >= 80) {
+            // High confidence: use regex result as-is
+            result.source = 'regex';
+        } else if (result.confidence >= 50) {
+            // Gray zone: ask LLM for clarification
+            const llmResult = await classifyIntent(message, context);
+
+            if (llmResult.confidence > result.confidence) {
+                // LLM is more confident, rebuild action card
+                const entities = extractEntities(message, context);
+                const links = findContextualLinks(entities, context);
+                const actionCard = buildActionCard(llmResult.type, entities, links, llmResult.confidence);
+
+                result = {
+                    intentType: llmResult.type,
+                    entities,
+                    links,
+                    actionCard,
+                    confidence: llmResult.confidence,
+                    source: 'llm'
+                };
+            } else {
+                result.source = 'regex';
+            }
+        } else {
+            // Low confidence: no action card
+            result.source = 'none';
+        }
 
         res.json(result);
     } catch (error) {
