@@ -13,6 +13,7 @@ const PATHS = {
     backlog: path.join(__dirname, '..', 'ideas', 'backlog.md'),
     projects: path.join(__dirname, '..', 'data', 'projects.json'),
     aiDrafts: path.join(__dirname, 'data', 'ai-drafts.json'),
+    myPosts: path.join(__dirname, '..', 'data', 'my-posts.json'),
     dataDir: path.join(__dirname, 'data')
 };
 

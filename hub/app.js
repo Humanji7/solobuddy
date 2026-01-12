@@ -1462,3 +1462,172 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// ============================================
+// My Posts (Voice Training Dataset)
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const myPostsBtn = document.getElementById('my-posts-btn');
+    const myPostsModal = document.getElementById('my-posts-modal');
+    const myPostsModalClose = document.getElementById('my-posts-modal-close');
+    const myPostsList = document.getElementById('my-posts-list');
+    const addPostBtn = document.getElementById('add-post-btn');
+    const newPostContent = document.getElementById('new-post-content');
+    const newPostPlatform = document.getElementById('new-post-platform');
+    const newPostProject = document.getElementById('new-post-project');
+    const postsCount = document.getElementById('posts-count');
+
+    let myPostsData = [];
+
+    async function loadMyPosts() {
+        try {
+            const response = await fetch('/api/posts');
+            myPostsData = await response.json();
+            renderMyPosts();
+        } catch (error) {
+            console.error('Error loading posts:', error);
+            myPostsList.innerHTML = '<div class="my-posts-empty">Failed to load posts</div>';
+        }
+    }
+
+    async function loadProjectsForPosts() {
+        try {
+            const response = await fetch('/api/projects');
+            const projects = await response.json();
+            newPostProject.innerHTML = '<option value="">No project</option>';
+            projects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.name;
+                option.textContent = p.name;
+                newPostProject.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading projects for posts:', error);
+        }
+    }
+
+    function renderMyPosts() {
+        if (myPostsData.length === 0) {
+            myPostsList.innerHTML = '<div class="my-posts-empty">No posts yet. Add your first published post to train the AI voice.</div>';
+            postsCount.textContent = '0 posts';
+            return;
+        }
+
+        postsCount.textContent = myPostsData.length + ' posts';
+
+        myPostsList.innerHTML = myPostsData
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(post => {
+                const contentDiv = document.createElement('div');
+                contentDiv.textContent = post.content;
+                const escapedContent = contentDiv.innerHTML;
+                const date = new Date(post.createdAt);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                return '<div class="my-post-item" data-id="' + post.id + '">' +
+                    '<div class="my-post-content">' + escapedContent + '</div>' +
+                    '<div class="my-post-meta">' +
+                        '<span class="my-post-platform">' + post.platform + '</span>' +
+                        (post.project ? '<span>📁 ' + post.project + '</span>' : '') +
+                        '<span>' + dateStr + '</span>' +
+                    '</div>' +
+                    '<button class="my-post-delete" data-id="' + post.id + '" title="Delete">×</button>' +
+                '</div>';
+            }).join('');
+
+        // Add delete handlers
+        myPostsList.querySelectorAll('.my-post-delete').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = e.target.dataset.id;
+                if (confirm('Delete this post?')) {
+                    await deletePost(id);
+                }
+            });
+        });
+    }
+
+    async function addPost() {
+        const content = newPostContent.value.trim();
+        if (!content) {
+            alert('Please enter post content');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content,
+                    platform: newPostPlatform.value,
+                    project: newPostProject.value || null
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to add post');
+
+            newPostContent.value = '';
+            await loadMyPosts();
+        } catch (error) {
+            console.error('Error adding post:', error);
+            alert('Failed to add post');
+        }
+    }
+
+    async function deletePost(id) {
+        try {
+            const response = await fetch('/api/posts/' + id, { method: 'DELETE' });
+            if (!response.ok) throw new Error('Failed to delete post');
+            await loadMyPosts();
+        } catch (error) {
+            console.error('Error deleting post:', error);
+            alert('Failed to delete post');
+        }
+    }
+
+    function openMyPostsModal() {
+        myPostsModal.classList.add('active');
+        loadMyPosts();
+        loadProjectsForPosts();
+    }
+
+    function closeMyPostsModal() {
+        myPostsModal.classList.remove('active');
+    }
+
+    // Event listeners
+    if (myPostsBtn) {
+        myPostsBtn.addEventListener('click', openMyPostsModal);
+    }
+
+    if (myPostsModalClose) {
+        myPostsModalClose.addEventListener('click', closeMyPostsModal);
+    }
+
+    if (myPostsModal) {
+        myPostsModal.addEventListener('click', (e) => {
+            if (e.target === myPostsModal) closeMyPostsModal();
+        });
+    }
+
+    if (addPostBtn) {
+        addPostBtn.addEventListener('click', addPost);
+    }
+
+    // Ctrl+Enter to add post
+    if (newPostContent) {
+        newPostContent.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                addPost();
+            }
+        });
+    }
+
+    // Escape to close
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && myPostsModal && myPostsModal.classList.contains('active')) {
+            closeMyPostsModal();
+        }
+    });
+});

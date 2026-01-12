@@ -27,6 +27,7 @@
                 </div>
                 <button id="ai-drafts-btn" class="btn-ai-drafts">📝 <span class="drafts-count"
                         id="drafts-count">0</span></button>
+                <button id="my-posts-btn" class="btn-my-posts">🎯 My Posts</button>
                 <button id="voice-btn" class="btn-voice">🌀 Voice</button>
                 <button id="github-connect-btn" class="btn-github">🐙 Connect GitHub</button>
                 <button id="local-connect-btn" class="btn-local">📁 Add Local</button>
@@ -217,6 +218,38 @@
                 </div>
                 <div class="modal-footer">
                     <span class="drafts-hint">💡 Drafts are saved automatically when generated</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Posts Modal (Voice Training Dataset) -->
+        <div class="modal" id="my-posts-modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>🎯 My Posts (Voice Training)</h3>
+                    <button class="modal-close" id="my-posts-modal-close">&times;</button>
+                </div>
+                <div class="my-posts-form">
+                    <textarea id="new-post-content" class="new-post-textarea" placeholder="Paste your published post here..."></textarea>
+                    <div class="new-post-meta">
+                        <select id="new-post-platform">
+                            <option value="twitter">Twitter/X</option>
+                            <option value="telegram">Telegram</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="new-post-project">
+                            <option value="">No project</option>
+                        </select>
+                        <button id="add-post-btn" class="btn-submit">Add Post</button>
+                    </div>
+                </div>
+                <div id="my-posts-list" class="my-posts-list">
+                    <div class="loading">Loading posts...</div>
+                </div>
+                <div class="modal-footer">
+                    <span class="posts-hint">💡 These posts train the AI to write in your voice</span>
+                    <span class="posts-count" id="posts-count">0 posts</span>
                 </div>
             </div>
         </div>

@@ -17,7 +17,6 @@ cd hub && npm start
 |------|-------|
 | Voice & identity | [PROFILE.md](PROFILE.md) |
 | How we work | [WORKFLOW.md](WORKFLOW.md) |
-| Active projects | [PROJECTS.md](PROJECTS.md) |
 | Philosophy | [BUILD_IN_PUBLIC.md](BUILD_IN_PUBLIC.md) |
 
 ## Technical

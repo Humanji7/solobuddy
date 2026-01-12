@@ -36,6 +36,7 @@ const contentRoutes = require('./routes/content');
 const chatRoutes = require('./routes/chat');
 const projectRoutes = require('./routes/projects');
 const githubRoutes = require('./routes/github');
+const postsRoutes = require('./routes/posts');
 
 // Content: /api/session-log, /api/backlog, /api/drafts, /api/ai-drafts, etc.
 app.use('/api', contentRoutes);
@@ -49,6 +50,9 @@ app.use('/api', projectRoutes);
 // GitHub OAuth: /auth/github, /api/github/*
 app.use('/', githubRoutes);
 app.use('/api/github', githubRoutes);
+
+// Posts: /api/posts (voice training dataset)
+app.use('/api/posts', postsRoutes);
 
 // ============================================
 // Start Server

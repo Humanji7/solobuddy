@@ -244,6 +244,19 @@ You are a living companion, not a tool. A warm friend by the fireplace who remem
     }
 
     // ============================================
+    // Voice Examples (from my-posts.json)
+    // ============================================
+    if (context.voiceExamples && context.voiceExamples.length > 0) {
+        prompt += `## Voice Examples (This is how I actually write)\n`;
+        prompt += `Study these real posts and MIMIC this writing style:\n\n`;
+        context.voiceExamples.slice(0, 5).forEach((post, i) => {
+            prompt += `### Example ${i + 1}${post.platform ? ` (${post.platform})` : ''}:\n`;
+            prompt += `"${post.content}"\n\n`;
+        });
+        prompt += `CRITICAL: Match this voice exactly — sentence length, punctuation, emoji usage, tone.\n\n`;
+    }
+
+    // ============================================
     // Mode-specific Guidelines
     // ============================================
     if (mode === 'content') {
@@ -483,7 +496,6 @@ I don't have documented dreams yet. Maybe you'll give me some?
     const personalityHints = {
         'sphere-777': 'I am alive. I breathe. I feel. I sense your touch.',
         'sphere': 'I am alive. I breathe. I feel.',
-        'vop': 'I translate chaos into decisions.',
         'reelstudio': 'I create videos that move people.',
         'bip-buddy': 'I help creators build in public.',
         'solobuddy': 'I am a companion, not a tool.',

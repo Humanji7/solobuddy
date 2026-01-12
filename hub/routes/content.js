@@ -343,13 +343,32 @@ router.post('/content/generate', async (req, res) => {
 
         const buddyMessage = await getBuddyMessage().catch(() => null);
 
+        // Load voice examples (my posts) for style training
+        let voiceExamples = [];
+        try {
+            const postsData = await fs.readFile(PATHS.myPosts, 'utf-8');
+            const parsed = JSON.parse(postsData);
+            const allPosts = parsed.posts || [];
+
+            // Filter by project if specified, otherwise use all
+            const filtered = project
+                ? allPosts.filter(p => p.project && p.project.toLowerCase() === project.toLowerCase())
+                : allPosts;
+
+            // Shuffle and take up to 5 examples
+            voiceExamples = filtered
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 5);
+        } catch (e) { /* No posts yet */ }
+
         const context = {
             projects,
             backlogItems,
             sessionLog,
             drafts,
             gitActivity,
-            buddyMessage
+            buddyMessage,
+            voiceExamples
         };
 
         const result = await generateContent(
