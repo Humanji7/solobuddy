@@ -24,6 +24,7 @@ cd hub && npm start
 
 | What | Where |
 |------|-------|
+| **Project Index** | [PROJECT_INDEX.md](PROJECT_INDEX.md) — read this for codebase overview |
 | Stack & architecture | [docs/STACK.md](docs/STACK.md) |
 | Commands | [docs/COMMANDS.md](docs/COMMANDS.md) |
 | Tests | [docs/TESTS.md](docs/TESTS.md) |
