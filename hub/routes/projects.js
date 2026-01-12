@@ -14,7 +14,7 @@ const { sendProjectVoice, extractPersonalityFromReadme, generateSoulFromSelectio
 const { updateProjectRemotes, scanLocalProjects, addLocalProjectsToConfig } = require('../github-api');
 
 // GET /api/projects
-router.get('/', async (req, res) => {
+router.get('/projects', async (req, res) => {
     try {
         const allProjects = await loadProjectsConfig();
 
@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/projects/refresh-remotes
-router.post('/refresh-remotes', async (req, res) => {
+router.post('/projects/refresh-remotes', async (req, res) => {
     try {
         const count = await updateProjectRemotes();
         res.json({
