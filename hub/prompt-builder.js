@@ -22,6 +22,104 @@ async function readFileSafe(filePath, fallback = null) {
 }
 
 /**
+ * Load user context from onboarding wizard data
+ * @returns {Object|null} - User context or null if not onboarded
+ */
+async function loadUserContext() {
+    const data = await readFileSafe(path.join(__dirname, 'data', 'user-context.json'));
+    if (!data) return null;
+    try {
+        const ctx = JSON.parse(data);
+        return ctx.onboarded ? ctx : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Build <user_context> section from onboarding wizard data
+ * Maps wizard fields to system-prompt-v2 format
+ * @param {Object} userCtx - User context from wizard
+ * @returns {string} - Formatted user context section
+ */
+function buildUserContextSection(userCtx) {
+    if (!userCtx) return '';
+
+    const phaseMap = {
+        shotgun: 'Shotgun (запуск нескольких проектов, поиск product-market fit через market feedback)',
+        sniper: 'Sniper (фокус на одном проекте, масштабирование)',
+        exploring: 'Exploring (исследование ниши, ещё не выбран путь)'
+    };
+
+    const skillMap = {
+        developer: 'разработчик',
+        ai_creator: 'AI-креатор',
+        video: 'видео-мейкер',
+        writer: 'писатель/копирайтер',
+        designer: 'дизайнер',
+        marketer: 'маркетолог'
+    };
+
+    const goalMap = {
+        discipline: 'дисциплина публичности',
+        networking: 'нетворкинг',
+        sales: 'продажи',
+        pmf: 'поиск PMF',
+        audience: 'рост аудитории'
+    };
+
+    let section = '<user_context>\nТекущая ситуация:\n';
+
+    // Phase
+    section += `- Фаза: ${phaseMap[userCtx.phase] || userCtx.phase}\n`;
+
+    // Projects
+    if (userCtx.projects && userCtx.projects.length > 0) {
+        const projectList = userCtx.projects.map(p => {
+            const status = p.status === 'live' ? '✅ live' : p.status === 'building' ? '🔧 building' : '💡 idea';
+            return `${p.name} (${status})`;
+        }).join(', ');
+        section += `- Проекты: ${projectList}\n`;
+    }
+
+    // Platforms
+    if (userCtx.platforms && userCtx.platforms.length > 0) {
+        const activePlatforms = userCtx.platforms.filter(p => p.followers > 0 || p.id);
+        if (activePlatforms.length > 0) {
+            const platformList = activePlatforms.map(p =>
+                `${p.id.charAt(0).toUpperCase() + p.id.slice(1)} (${p.followers || 0})`
+            ).join(', ');
+            section += `- Платформы: ${platformList}\n`;
+        }
+    }
+
+    // Skills
+    if (userCtx.skills && userCtx.skills.length > 0) {
+        const skillList = userCtx.skills.map(s => skillMap[s] || s).join(', ');
+        section += `- Навыки: ${skillList}\n`;
+    }
+
+    // Time per day
+    if (userCtx.timePerDay) {
+        section += `- Время: ${userCtx.timePerDay} минут в день на контент\n`;
+    }
+
+    // Goals
+    if (userCtx.goals && userCtx.goals.length > 0) {
+        const goalList = userCtx.goals.map(g => goalMap[g] || g).join(' → ');
+        section += `- Цели: ${goalList}\n`;
+    }
+
+    // Language preference
+    if (userCtx.language) {
+        section += `- Язык: ${userCtx.language === 'ru' ? 'русский' : 'English'}\n`;
+    }
+
+    section += '</user_context>\n\n';
+    return section;
+}
+
+/**
  * Detect language of user input based on character analysis
  * @param {string} text - User's message
  * @returns {'ru'|'en'} - Detected language
@@ -528,12 +626,67 @@ ${hint[1]}
 }
 
 
+/**
+ * Build System Prompt V2 - BIP Strategic Partner mode
+ * Loads system-prompt-v2.md and dynamically injects user context from onboarding wizard
+ * @param {Object} options - {userMessage} for language detection
+ * @returns {Promise<string>} - Complete system prompt with dynamic user context
+ */
+async function buildSystemPromptV2(options = {}) {
+    const { userMessage = null } = options;
+
+    // Load the base template
+    const templatePath = path.join(__dirname, '..', 'system-prompt-v2.md');
+    let template = await readFileSafe(templatePath);
+
+    if (!template) {
+        console.warn('[prompt-builder] system-prompt-v2.md not found, using fallback');
+        return buildSystemPrompt({}, { mode: 'chat', userMessage });
+    }
+
+    // Load user context from wizard
+    const userCtx = await loadUserContext();
+
+    // If user context exists, replace the static <user_context> section with dynamic one
+    if (userCtx) {
+        const dynamicUserContext = buildUserContextSection(userCtx);
+        // Replace the entire <user_context>...</user_context> block
+        template = template.replace(
+            /<user_context>[\s\S]*?<\/user_context>/,
+            dynamicUserContext.trim()
+        );
+    }
+
+    // Add language enforcement at the start
+    let prompt = '';
+    if (userMessage) {
+        const detectedLang = detectLanguage(userMessage);
+        if (detectedLang === 'ru') {
+            prompt += `🔴 MANDATORY LANGUAGE: Respond in RUSSIAN (Русский)!
+User wrote in Russian — your ENTIRE response must be in Russian.
+
+`;
+        } else {
+            prompt += `🔴 MANDATORY LANGUAGE: Respond in ENGLISH!
+User wrote in English — your ENTIRE response must be in English.
+
+`;
+        }
+    }
+
+    prompt += template;
+    return prompt;
+}
+
 module.exports = {
     buildSystemPrompt,
+    buildSystemPromptV2,
     buildContentPrompt,
     buildProjectVoicePrompt,
     loadPersonaConfig,
     loadPersonaPrompt,
     loadTemplate,
+    loadUserContext,
+    buildUserContextSection,
     detectLanguage
 };
