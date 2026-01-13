@@ -45,7 +45,7 @@ const INTENT_PATTERNS = {
     generate_content: [
         // Russian: напиши/сделай/создай + content type (tolerant to typos)
         // NOTE: "совет" removed — it's conversational, not content generation
-        /(?:напи?[шс][иы]?|сделай|создай|сгенер[а-яё]+)\s*(?:пост|тред|thread|tip)/i,
+        /(?:напи?[шс][иы]?|сделай|создай|сгенер[а-яё]+)\s+(?:черновик\s+)?(?:пост|тред|thread|tip)/i,
         // Russian: нужен/хочу/дай/давай/запили + content type
         /(?:нужен|хочу|дай|давай|запили|накидай|набросай)\s*(?:пост|тред)/i,
         // Russian: content type + "про" (topic trigger)
