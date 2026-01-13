@@ -24,7 +24,10 @@ router.get('/projects', async (req, res) => {
         for (const project of allProjects) {
             try {
                 await fs.access(project.path);
-                validatedProjects.push({ ...project, exists: true });
+                // Check if project has a soul
+                const soul = await soulManager.loadSoul(project.name, project.path);
+                const hasSoul = !!(soul && soul.personality);
+                validatedProjects.push({ ...project, exists: true, hasSoul });
             } catch (e) {
                 staleProjects.push(project);
                 console.log(`[Projects] Stale project detected: ${project.name} (${project.path})`);
@@ -34,7 +37,7 @@ router.get('/projects', async (req, res) => {
         if (staleProjects.length > 0 && req.query.cleanup === 'true') {
             const cleanedData = {
                 projects: validatedProjects.map(p => {
-                    const { exists, ...rest } = p;
+                    const { exists, hasSoul, ...rest } = p;
                     return rest;
                 })
             };

@@ -38,6 +38,7 @@ const projectRoutes = require('./routes/projects');
 const githubRoutes = require('./routes/github');
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
+const settingsRoutes = require('./routes/settings');
 
 // Content: /api/session-log, /api/backlog, /api/drafts, /api/ai-drafts, etc.
 app.use('/api', contentRoutes);
@@ -57,6 +58,9 @@ app.use('/api/posts', postsRoutes);
 
 // User: /api/user-context (onboarding and settings)
 app.use('/api', userRoutes);
+
+// Settings: /api/settings
+app.use('/api/settings', settingsRoutes);
 
 // ============================================
 // Start Server

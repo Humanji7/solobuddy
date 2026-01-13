@@ -1,0 +1,22 @@
+{
+  "profile": {
+    "bipStartDate": "2025-01-01",
+    "currentPhase": "early",
+    "goals": [],
+    "timezone": "Europe/Moscow"
+  },
+  "platforms": {
+    "twitter": {
+      "handle": "https://x.com/Toporcalibur",
+      "followers": 5
+    },
+    "telegram": {
+      "handle": "",
+      "followers": 0
+    },
+    "linkedin": {
+      "handle": "",
+      "followers": 0
+    }
+  }
+}
