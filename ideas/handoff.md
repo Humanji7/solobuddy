@@ -6,55 +6,55 @@
 
 ## Текущее состояние
 
-**Последний коммит:** `544bc4a` feat(settings): add Settings modal with tabs
+**Последний коммит:** `2a62275` fix(settings): compact tabs to fit 6 in one row
 
 **Сервер:** http://localhost:3000
 
 **Что готово:**
-- Settings Modal с 3 табами (Profile, Platforms, Projects)
-- API `/api/settings` (GET/PUT)
-- Кнопка ⚙️ в header
+- Settings Modal с 6 табами (Profile, Platforms, Projects, Prompts, Voice, Soul)
+- API `/api/settings` (GET/PUT) — основные настройки
+- API `/api/prompts` — редактирование промптов (chat, voice, soul)
+- Reset to Default для Prompts и Voice
+- Defaults автосохраняются в `hub/prompts/defaults/`
+- ✅ UI табов Settings исправлен (компактные, 6 в ряд)
 
 ---
 
-## Следующая задача: LLM Settings (Advanced)
+## Следующая задача: Настройка LLM в хабе
 
-**Цель:** Дать пользователю полный контроль над LLM — не просто UI настройки, а доступ "под капот".
+**Проблема:** Хаб не вызывает draft карточку при запросе генерации поста.
 
-### Что нужно добавить в Settings:
+**Контекст:** Пользователь кинул промпт:
+> "Напиши черновик поста для IndieHackers. Формат IH: длиннее чем твит, история + что сделал + что понял. Без заголовков, без списков. Пиши в моём голосе из примеров. С юмором, без пафоса. Фокус: {{first post about Solobuddy}}"
 
-#### Tab 4: LLM Settings
-1. **Параметры модели:**
-   - Temperature (0.0 - 1.0)
-   - Max tokens
-   - Model selection (если несколько доступно)
+**Ожидалось:** Хаб создаёт draft карточку с постом.
 
-2. **System Prompts (read/edit):**
-   - **Hub Chat prompt** — что говорится AI когда пользователь пишет в главный чат
-   - **Soul/Voice prompt** — что говорится AI когда пользователь разговаривает с проектом
-   - Возможность редактировать эти промпты напрямую
+**Факт:** Хаб ответил текстом поста прямо в чат, не вызвав карточку.
 
-3. **Preview режим:**
-   - Показывать полный system prompt перед отправкой (debug mode)
-   - Логировать что именно отправляется в API
+**Нужно исследовать:**
+1. Как хаб определяет когда создавать draft карточку?
+2. Где логика триггера для draft creation?
+3. Как system prompt влияет на это поведение?
 
-### Архитектурные соображения:
+---
 
-- Промпты сейчас строятся в `prompt-builder.js`
-- Нужно решить: хранить кастомные промпты в settings.json или отдельно?
-- Возможно стоит сделать "Advanced" toggle чтобы не пугать обычных пользователей
+## Архитектура LLM Settings (реализовано)
 
-### Философия:
+| Слой | Файл | Назначение |
+|------|------|------------|
+| Hub Chat | `system-prompt-v2.md` | System prompt для главного чата |
+| Voice | `hub/prompts/jester-sage.md` | Стиль написания постов |
+| Soul | `data/project-souls/{project}.json` → `soulMdContent` | Результат онбординга проекта |
 
-> "Идеальная персонализация — когда человек может сам зайти и поковыряться"
-
-Это не просто настройки — это прозрачность. Пользователь должен понимать что AI видит и как он думает.
+**Исключено из scope (legacy):**
+- Temperature — устарело в 2026
+- Max tokens — не нужно
+- Model selection — не нужно
 
 ---
 
 ## Также в очереди:
 
-- **Polish UI:** Tab transitions, micro-interactions, dropdown меню
 - **Тесты:** Пока 0 файлов (норм для текущей стадии)
 - **docs/STACK.md:** Outdated после рефакторинга
 
