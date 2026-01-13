@@ -14,6 +14,23 @@ const { sendToClaude } = require('../chat-api');
 const { getBuddyMessage } = require('../watcher');
 const { classifyIntent } = require('../llm-intent-classifier');
 const { isContentRequest } = require('../groq-classifier');
+const { loadUserContext, buildUserContextSection } = require('../prompt-builder');
+
+// GET /api/debug/user-context - временный endpoint для валидации Issue #3
+router.get('/debug/user-context', async (req, res) => {
+    const ctx = await loadUserContext();
+    if (!ctx) {
+        return res.json({ error: 'No user context (not onboarded)' });
+    }
+    const section = buildUserContextSection(ctx);
+    const bipLine = section.split('\n').find(l => l.includes('BIP-путь'));
+    res.json({
+        bipStartDate: ctx.bipStartDate,
+        postsCount: ctx.postsCount,
+        bipLine: bipLine || null,
+        fullSection: section
+    });
+});
 
 // POST /api/intent/parse
 router.post('/intent/parse', async (req, res) => {
