@@ -314,6 +314,9 @@
                     <button class="settings-tab active" data-tab="profile">Profile</button>
                     <button class="settings-tab" data-tab="platforms">Platforms</button>
                     <button class="settings-tab" data-tab="projects">Projects</button>
+                    <button class="settings-tab" data-tab="prompts">Prompts</button>
+                    <button class="settings-tab" data-tab="voice">Voice</button>
+                    <button class="settings-tab" data-tab="soul">Soul</button>
                 </div>
                 <div class="settings-content">
                     <!-- Profile Tab -->
@@ -379,6 +382,47 @@
                             <div class="loading">Loading projects...</div>
                         </div>
                         <p class="form-hint">Edit project souls via the Voice modal</p>
+                    </div>
+                    <!-- Prompts Tab (Hub Chat) -->
+                    <div class="settings-tab-content" id="tab-prompts">
+                        <div class="form-group">
+                            <label for="settings-chat-prompt">Hub Chat System Prompt</label>
+                            <p class="form-hint">This prompt defines how the chat assistant behaves and responds.</p>
+                            <textarea id="settings-chat-prompt" class="prompt-textarea" rows="15" placeholder="Loading..."></textarea>
+                        </div>
+                        <div class="prompt-actions">
+                            <button id="prompt-chat-reset" class="btn-secondary">Reset to Default</button>
+                            <button id="prompt-chat-save" class="btn-submit">Save</button>
+                        </div>
+                    </div>
+                    <!-- Voice Tab -->
+                    <div class="settings-tab-content" id="tab-voice">
+                        <div class="form-group">
+                            <label for="settings-voice-prompt">Voice Prompt (Writing Style)</label>
+                            <p class="form-hint">This defines the style and tone for generated content.</p>
+                            <textarea id="settings-voice-prompt" class="prompt-textarea" rows="15" placeholder="Loading..."></textarea>
+                        </div>
+                        <div class="prompt-actions">
+                            <button id="prompt-voice-reset" class="btn-secondary">Reset to Default</button>
+                            <button id="prompt-voice-save" class="btn-submit">Save</button>
+                        </div>
+                    </div>
+                    <!-- Soul Tab -->
+                    <div class="settings-tab-content" id="tab-soul">
+                        <div class="form-group">
+                            <label for="settings-soul-project">Select Project</label>
+                            <select id="settings-soul-project">
+                                <option value="">-- Select a project --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="settings-soul-content">Soul Content</label>
+                            <p class="form-hint">This is the personality and context generated during onboarding.</p>
+                            <textarea id="settings-soul-content" class="prompt-textarea" rows="15" placeholder="Select a project to view its soul..."></textarea>
+                        </div>
+                        <div class="prompt-actions">
+                            <button id="prompt-soul-save" class="btn-submit">Save</button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer settings-footer">

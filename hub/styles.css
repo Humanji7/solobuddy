@@ -2240,3 +2240,54 @@ body {
     width: auto;
     padding: var(--spacing-sm) var(--spacing-lg);
 }
+
+/* Prompt Editor Styles */
+.prompt-textarea {
+    width: 100%;
+    min-height: 300px;
+    padding: var(--spacing-md);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    resize: vertical;
+}
+
+.prompt-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.prompt-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.prompt-actions .btn-secondary {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.prompt-actions .btn-secondary:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.prompt-actions .btn-submit {
+    width: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+}

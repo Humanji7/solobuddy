@@ -39,6 +39,7 @@ const githubRoutes = require('./routes/github');
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
 const settingsRoutes = require('./routes/settings');
+const promptsRoutes = require('./routes/prompts');
 
 // Content: /api/session-log, /api/backlog, /api/drafts, /api/ai-drafts, etc.
 app.use('/api', contentRoutes);
@@ -61,6 +62,9 @@ app.use('/api', userRoutes);
 
 // Settings: /api/settings
 app.use('/api/settings', settingsRoutes);
+
+// Prompts: /api/prompts (chat, voice, soul)
+app.use('/api/prompts', promptsRoutes);
 
 // ============================================
 // Start Server

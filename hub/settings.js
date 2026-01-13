@@ -28,6 +28,21 @@
     // Projects list
     const projectsList = document.getElementById('settings-projects-list');
 
+    // Prompts tab elements
+    const chatPromptTextarea = document.getElementById('settings-chat-prompt');
+    const chatPromptSaveBtn = document.getElementById('prompt-chat-save');
+    const chatPromptResetBtn = document.getElementById('prompt-chat-reset');
+
+    // Voice tab elements
+    const voicePromptTextarea = document.getElementById('settings-voice-prompt');
+    const voicePromptSaveBtn = document.getElementById('prompt-voice-save');
+    const voicePromptResetBtn = document.getElementById('prompt-voice-reset');
+
+    // Soul tab elements
+    const soulProjectSelect = document.getElementById('settings-soul-project');
+    const soulContentTextarea = document.getElementById('settings-soul-content');
+    const soulSaveBtn = document.getElementById('prompt-soul-save');
+
     let currentSettings = null;
 
     /**
@@ -112,6 +127,255 @@
                 <span class="project-path">${project.path || project.url || ''}</span>
             </div>
         `).join('');
+    }
+
+    // ============================================
+    // Prompts Tab Functions
+    // ============================================
+
+    /**
+     * Load chat prompt
+     */
+    async function loadChatPrompt() {
+        try {
+            chatPromptTextarea.placeholder = 'Loading...';
+            const response = await fetch('/api/prompts/chat');
+            const data = await response.json();
+            chatPromptTextarea.value = data.content || '';
+            chatPromptTextarea.placeholder = 'Enter system prompt...';
+        } catch (error) {
+            console.error('Error loading chat prompt:', error);
+            chatPromptTextarea.placeholder = 'Failed to load';
+        }
+    }
+
+    /**
+     * Save chat prompt
+     */
+    async function saveChatPrompt() {
+        chatPromptSaveBtn.textContent = 'Saving...';
+        chatPromptSaveBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/prompts/chat', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: chatPromptTextarea.value })
+            });
+
+            if (!response.ok) throw new Error('Failed to save');
+
+            chatPromptSaveBtn.textContent = 'Saved!';
+            if (typeof showToast === 'function') showToast('Chat prompt saved');
+        } catch (error) {
+            console.error('Error saving chat prompt:', error);
+            if (typeof showToast === 'function') showToast('Failed to save', true);
+        } finally {
+            setTimeout(() => {
+                chatPromptSaveBtn.textContent = 'Save';
+                chatPromptSaveBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    /**
+     * Reset chat prompt to default
+     */
+    async function resetChatPrompt() {
+        if (!confirm('Reset chat prompt to default? Your changes will be lost.')) return;
+
+        chatPromptResetBtn.textContent = 'Resetting...';
+        chatPromptResetBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/prompts/chat/reset', { method: 'POST' });
+            const data = await response.json();
+
+            if (!response.ok) throw new Error('Failed to reset');
+
+            chatPromptTextarea.value = data.content || '';
+            if (typeof showToast === 'function') showToast('Reset to default');
+        } catch (error) {
+            console.error('Error resetting chat prompt:', error);
+            if (typeof showToast === 'function') showToast('Failed to reset', true);
+        } finally {
+            setTimeout(() => {
+                chatPromptResetBtn.textContent = 'Reset to Default';
+                chatPromptResetBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    // ============================================
+    // Voice Tab Functions
+    // ============================================
+
+    /**
+     * Load voice prompt
+     */
+    async function loadVoicePrompt() {
+        try {
+            voicePromptTextarea.placeholder = 'Loading...';
+            const response = await fetch('/api/prompts/voice');
+            const data = await response.json();
+            voicePromptTextarea.value = data.content || '';
+            voicePromptTextarea.placeholder = 'Enter voice prompt...';
+        } catch (error) {
+            console.error('Error loading voice prompt:', error);
+            voicePromptTextarea.placeholder = 'Failed to load';
+        }
+    }
+
+    /**
+     * Save voice prompt
+     */
+    async function saveVoicePrompt() {
+        voicePromptSaveBtn.textContent = 'Saving...';
+        voicePromptSaveBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/prompts/voice', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: voicePromptTextarea.value })
+            });
+
+            if (!response.ok) throw new Error('Failed to save');
+
+            voicePromptSaveBtn.textContent = 'Saved!';
+            if (typeof showToast === 'function') showToast('Voice prompt saved');
+        } catch (error) {
+            console.error('Error saving voice prompt:', error);
+            if (typeof showToast === 'function') showToast('Failed to save', true);
+        } finally {
+            setTimeout(() => {
+                voicePromptSaveBtn.textContent = 'Save';
+                voicePromptSaveBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    /**
+     * Reset voice prompt to default
+     */
+    async function resetVoicePrompt() {
+        if (!confirm('Reset voice prompt to default? Your changes will be lost.')) return;
+
+        voicePromptResetBtn.textContent = 'Resetting...';
+        voicePromptResetBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/prompts/voice/reset', { method: 'POST' });
+            const data = await response.json();
+
+            if (!response.ok) throw new Error('Failed to reset');
+
+            voicePromptTextarea.value = data.content || '';
+            if (typeof showToast === 'function') showToast('Reset to default');
+        } catch (error) {
+            console.error('Error resetting voice prompt:', error);
+            if (typeof showToast === 'function') showToast('Failed to reset', true);
+        } finally {
+            setTimeout(() => {
+                voicePromptResetBtn.textContent = 'Reset to Default';
+                voicePromptResetBtn.disabled = false;
+            }, 1500);
+        }
+    }
+
+    // ============================================
+    // Soul Tab Functions
+    // ============================================
+
+    /**
+     * Load projects list for soul dropdown
+     */
+    async function loadSoulProjects() {
+        try {
+            const response = await fetch('/api/prompts/soul/list');
+            const projects = await response.json();
+
+            soulProjectSelect.innerHTML = '<option value="">-- Select a project --</option>';
+
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.name;
+                option.textContent = project.name + (project.hasSoulContent ? ' (has soul)' : '');
+                soulProjectSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading soul projects:', error);
+        }
+    }
+
+    /**
+     * Load soul content for selected project
+     */
+    async function loadSoulContent(projectName) {
+        if (!projectName) {
+            soulContentTextarea.value = '';
+            soulContentTextarea.placeholder = 'Select a project to view its soul...';
+            return;
+        }
+
+        try {
+            soulContentTextarea.placeholder = 'Loading...';
+            const response = await fetch(`/api/prompts/soul?projectName=${encodeURIComponent(projectName)}`);
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    soulContentTextarea.value = '';
+                    soulContentTextarea.placeholder = 'No soul found for this project. Run onboarding first.';
+                    return;
+                }
+                throw new Error('Failed to load');
+            }
+
+            const data = await response.json();
+            soulContentTextarea.value = data.content || '';
+            soulContentTextarea.placeholder = 'Soul content...';
+        } catch (error) {
+            console.error('Error loading soul content:', error);
+            soulContentTextarea.placeholder = 'Failed to load';
+        }
+    }
+
+    /**
+     * Save soul content
+     */
+    async function saveSoulContent() {
+        const projectName = soulProjectSelect.value;
+        if (!projectName) {
+            if (typeof showToast === 'function') showToast('Select a project first', true);
+            return;
+        }
+
+        soulSaveBtn.textContent = 'Saving...';
+        soulSaveBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/prompts/soul', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectName: projectName,
+                    content: soulContentTextarea.value
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to save');
+
+            soulSaveBtn.textContent = 'Saved!';
+            if (typeof showToast === 'function') showToast('Soul saved');
+        } catch (error) {
+            console.error('Error saving soul:', error);
+            if (typeof showToast === 'function') showToast('Failed to save', true);
+        } finally {
+            setTimeout(() => {
+                soulSaveBtn.textContent = 'Save';
+                soulSaveBtn.disabled = false;
+            }, 1500);
+        }
     }
 
     /**
@@ -206,9 +470,15 @@
             content.classList.toggle('active', contentId === tabName);
         });
 
-        // Load projects if switching to projects tab
+        // Load data for specific tabs
         if (tabName === 'projects') {
             loadProjects();
+        } else if (tabName === 'prompts') {
+            loadChatPrompt();
+        } else if (tabName === 'voice') {
+            loadVoicePrompt();
+        } else if (tabName === 'soul') {
+            loadSoulProjects();
         }
     }
 
@@ -256,6 +526,32 @@
             switchTab(tab.dataset.tab);
         });
     });
+
+    // Prompts tab buttons
+    if (chatPromptSaveBtn) {
+        chatPromptSaveBtn.addEventListener('click', saveChatPrompt);
+    }
+    if (chatPromptResetBtn) {
+        chatPromptResetBtn.addEventListener('click', resetChatPrompt);
+    }
+
+    // Voice tab buttons
+    if (voicePromptSaveBtn) {
+        voicePromptSaveBtn.addEventListener('click', saveVoicePrompt);
+    }
+    if (voicePromptResetBtn) {
+        voicePromptResetBtn.addEventListener('click', resetVoicePrompt);
+    }
+
+    // Soul tab
+    if (soulProjectSelect) {
+        soulProjectSelect.addEventListener('change', (e) => {
+            loadSoulContent(e.target.value);
+        });
+    }
+    if (soulSaveBtn) {
+        soulSaveBtn.addEventListener('click', saveSoulContent);
+    }
 
     // Keyboard: Escape to close
     document.addEventListener('keydown', (e) => {
