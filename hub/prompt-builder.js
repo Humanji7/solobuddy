@@ -22,7 +22,23 @@ async function readFileSafe(filePath, fallback = null) {
 }
 
 /**
+ * Load posts count from my-posts.json for temporal context
+ * @returns {Promise<number>} - Number of published posts
+ */
+async function loadPostsCount() {
+    const data = await readFileSafe(path.join(__dirname, '..', 'data', 'my-posts.json'));
+    if (!data) return 0;
+    try {
+        const parsed = JSON.parse(data);
+        return parsed.posts?.length || 0;
+    } catch {
+        return 0;
+    }
+}
+
+/**
  * Load user context from onboarding wizard data
+ * Enriched with postsCount from my-posts.json
  * @returns {Object|null} - User context or null if not onboarded
  */
 async function loadUserContext() {
@@ -30,7 +46,12 @@ async function loadUserContext() {
     if (!data) return null;
     try {
         const ctx = JSON.parse(data);
-        return ctx.onboarded ? ctx : null;
+        if (!ctx.onboarded) return null;
+
+        // Enrich with posts count from my-posts.json
+        ctx.postsCount = await loadPostsCount();
+
+        return ctx;
     } catch {
         return null;
     }
@@ -113,6 +134,27 @@ function buildUserContextSection(userCtx) {
     // Language preference
     if (userCtx.language) {
         section += `- Язык: ${userCtx.language === 'ru' ? 'русский' : 'English'}\n`;
+    }
+
+    // Temporal context: BIP journey stage
+    if (userCtx.bipStartDate) {
+        const startDate = new Date(userCtx.bipStartDate);
+        const now = new Date();
+        const daysSinceStart = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
+        // Determine journey stage
+        let stage = 'новичок';
+        if (daysSinceStart > 90 || (userCtx.postsCount && userCtx.postsCount > 50)) {
+            stage = 'опытный';
+        } else if (daysSinceStart > 30 || (userCtx.postsCount && userCtx.postsCount > 15)) {
+            stage = 'растущий';
+        }
+
+        section += `- BIP-путь: ${daysSinceStart} дней (${stage})`;
+        if (userCtx.postsCount !== undefined) {
+            section += `, ${userCtx.postsCount} постов`;
+        }
+        section += '\n';
     }
 
     section += '</user_context>\n\n';
