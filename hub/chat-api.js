@@ -5,7 +5,7 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
-const { buildSystemPrompt, buildContentPrompt, loadPersonaConfig, buildProjectVoicePrompt } = require('./prompt-builder');
+const { buildSystemPrompt, buildSystemPromptV2, buildContentPrompt, loadPersonaConfig, buildProjectVoicePrompt } = require('./prompt-builder');
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
@@ -230,7 +230,7 @@ async function sendToClaude(messages, context) {
     const userMessage = lastUserMessage ? (lastUserMessage.content || lastUserMessage.text) : null;
 
     const response = await callClaude(apiKey, {
-        system: buildSystemPrompt(context, { userMessage }),
+        system: await buildSystemPromptV2(context, { userMessage }),
         messages: normalizeMessages(messages)
     });
 

@@ -26,6 +26,8 @@ NOT content requests:
 - Bug reports
 - General conversation
 - Asking for help
+- Asking for advice/strategy (совет, стратегия, рекомендация)
+- Questions about what to do
 
 Reply with ONLY valid JSON:
 {"is_content_request": true, "confidence": 85}

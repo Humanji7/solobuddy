@@ -627,12 +627,141 @@ ${hint[1]}
 
 
 /**
+ * Build runtime context section (git activity, projects, backlog, drafts)
+ * Extracted from buildSystemPrompt for reuse in V2
+ * @param {Object} context - Runtime context object
+ * @param {Object} options - {focusProject}
+ * @returns {string} - Formatted runtime context section
+ */
+function buildRuntimeContextSection(context, options = {}) {
+    const { projects, backlogItems, gitActivity, sessionLog, drafts, buddyMessage } = context;
+    const { focusProject = null } = options;
+
+    let section = '\n\n# Current State\n';
+
+    // Buddy observations (if any)
+    if (buddyMessage && (buddyMessage.left || buddyMessage.right)) {
+        section += `## Right Now\n`;
+        if (buddyMessage.left) {
+            section += `🔥 **Observation 1**: ${buddyMessage.left.message}\n`;
+        }
+        if (buddyMessage.right) {
+            section += `🔥 **Observation 2**: ${buddyMessage.right.message}\n`;
+        }
+        section += `\n`;
+    }
+
+    // Git activity patterns
+    if (gitActivity && gitActivity.length > 0) {
+        const relevantActivity = focusProject
+            ? gitActivity.filter(p => matchProject(p.name, focusProject))
+            : gitActivity;
+
+        if (relevantActivity.length > 0) {
+            section += `## Recent Work Patterns (Git Activity)\n`;
+            relevantActivity.slice(0, 8).forEach(proj => {
+                if (proj.commitsThisWeek > 0 || proj.daysSilent !== null) {
+                    let activity = '';
+                    if (proj.isActive) {
+                        activity = `🟢 ACTIVE today (${proj.commitsToday} commits)`;
+                    } else if (proj.daysSilent === 0) {
+                        activity = `🟢 touched today`;
+                    } else if (proj.daysSilent && proj.daysSilent <= 2) {
+                        activity = `🟡 ${proj.daysSilent} days ago`;
+                    } else if (proj.daysSilent && proj.daysSilent > 2) {
+                        activity = `😴 sleeping ${proj.daysSilent} days`;
+                    } else {
+                        activity = `📊 ${proj.commitsThisWeek} commits this week`;
+                    }
+                    section += `- **${proj.name}**: ${activity}`;
+                    if (proj.lastCommitMessage) {
+                        section += ` — last: "${proj.lastCommitMessage.substring(0, 50)}"`;
+                    }
+                    section += `\n`;
+                }
+            });
+            section += `\n`;
+        }
+    }
+
+    // Projects list
+    if (projects && projects.length > 0) {
+        const relevantProjects = focusProject
+            ? projects.filter(p => matchProject(p.name, focusProject))
+            : projects.slice(0, 8);
+
+        if (relevantProjects.length > 0) {
+            section += `## Projects I Know About\n`;
+            relevantProjects.forEach(p => {
+                section += `- **${p.name}**${p.github ? ` (GitHub)` : ' (local only)'}\n`;
+            });
+            section += `\n`;
+        }
+    }
+
+    // Session log (today's captures)
+    if (sessionLog && sessionLog.length > 0) {
+        section += `## Today's Captures (Session Log)\n`;
+        sessionLog.slice(0, 5).forEach(item => {
+            section += `- ${item.emoji} "${item.title}" → ${item.format}\n`;
+        });
+        section += `\n`;
+    }
+
+    // Backlog ideas
+    if (backlogItems && backlogItems.length > 0) {
+        const relevantItems = focusProject
+            ? backlogItems.filter(i => i.project && matchProject(i.project, focusProject))
+            : backlogItems;
+
+        const highPriority = relevantItems.filter(i => i.priority === 'high');
+        const medium = relevantItems.filter(i => i.priority === 'medium');
+
+        if (highPriority.length > 0 || medium.length > 0) {
+            section += `## Ideas Backlog\n`;
+            if (highPriority.length > 0) {
+                section += `🔥 High priority:\n`;
+                highPriority.slice(0, 3).forEach(item => {
+                    section += `- ${item.title}\n`;
+                });
+            }
+            if (medium.length > 0) {
+                section += `📋 Medium:\n`;
+                medium.slice(0, 3).forEach(item => {
+                    section += `- ${item.title}\n`;
+                });
+            }
+            section += `\n`;
+        }
+    }
+
+    // Drafts in progress
+    if (drafts && drafts.length > 0) {
+        const relevantDrafts = focusProject
+            ? drafts.filter(d => d.project && matchProject(d.project, focusProject))
+            : drafts;
+
+        if (relevantDrafts.length > 0) {
+            section += `## Drafts in Progress\n`;
+            relevantDrafts.slice(0, 5).forEach(draft => {
+                const statusEmoji = draft.status === 'ready' ? '✅' : draft.status === 'in-progress' ? '🔧' : '📝';
+                section += `- ${statusEmoji} ${draft.title} (${draft.status})\n`;
+            });
+            section += `\n`;
+        }
+    }
+
+    return section;
+}
+
+/**
  * Build System Prompt V2 - BIP Strategic Partner mode
  * Loads system-prompt-v2.md and dynamically injects user context from onboarding wizard
+ * @param {Object} context - Runtime context (projects, gitActivity, backlog, etc.)
  * @param {Object} options - {userMessage} for language detection
  * @returns {Promise<string>} - Complete system prompt with dynamic user context
  */
-async function buildSystemPromptV2(options = {}) {
+async function buildSystemPromptV2(context = {}, options = {}) {
     const { userMessage = null } = options;
 
     // Load the base template
@@ -640,8 +769,8 @@ async function buildSystemPromptV2(options = {}) {
     let template = await readFileSafe(templatePath);
 
     if (!template) {
-        console.warn('[prompt-builder] system-prompt-v2.md not found, using fallback');
-        return buildSystemPrompt({}, { mode: 'chat', userMessage });
+        console.warn('[prompt-builder] V2 template missing, degrading to V1 with context');
+        return buildSystemPrompt(context, { mode: 'chat', userMessage });
     }
 
     // Load user context from wizard
@@ -675,6 +804,12 @@ User wrote in English — your ENTIRE response must be in English.
     }
 
     prompt += template;
+
+    // Append runtime context (git activity, projects, backlog, etc.)
+    if (context && Object.keys(context).length > 0) {
+        prompt += buildRuntimeContextSection(context, options);
+    }
+
     return prompt;
 }
 
