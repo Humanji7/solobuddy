@@ -6,7 +6,7 @@
 
 ## Текущее состояние
 
-**Последний коммит:** `2a62275` fix(settings): compact tabs to fit 6 in one row
+**Последний коммит:** `docs: add GROQ_API_KEY to .env.example`
 
 **Сервер:** http://localhost:3000
 
@@ -15,48 +15,80 @@
 - API `/api/settings` (GET/PUT) — основные настройки
 - API `/api/prompts` — редактирование промптов (chat, voice, soul)
 - Reset to Default для Prompts и Voice
-- Defaults автосохраняются в `hub/prompts/defaults/`
-- ✅ UI табов Settings исправлен (компактные, 6 в ряд)
+- ✅ ContentGeneratorCard работает (Groq Gate настроен)
 
 ---
 
-## Следующая задача: Настройка LLM в хабе
+## Решено: Draft карточка не появлялась
 
-**Проблема:** Хаб не вызывает draft карточку при запросе генерации поста.
+**Root cause:** `GROQ_API_KEY` отсутствовал в `hub/.env`
 
-**Контекст:** Пользователь кинул промпт:
-> "Напиши черновик поста для IndieHackers. Формат IH: длиннее чем твит, история + что сделал + что понял. Без заголовков, без списков. Пиши в моём голосе из примеров. С юмором, без пафоса. Фокус: {{first post about Solobuddy}}"
+**Как работает:**
+1. Пользователь пишет "Напиши черновик поста..."
+2. `/api/intent/parse` → regex (не матчит) → Groq Gate (fallback)
+3. Groq определяет `generate_content` с confidence 92%
+4. Фронтенд показывает `ContentGeneratorCard`
+5. Клик "Generate" → `/api/content/generate` → Post Editor
 
-**Ожидалось:** Хаб создаёт draft карточку с постом.
-
-**Факт:** Хаб ответил текстом поста прямо в чат, не вызвав карточку.
-
-**Нужно исследовать:**
-1. Как хаб определяет когда создавать draft карточку?
-2. Где логика триггера для draft creation?
-3. Как system prompt влияет на это поведение?
+**Fix:** Скопирован `.env` в `hub/` с `GROQ_API_KEY`
 
 ---
 
-## Архитектура LLM Settings (реализовано)
+## Следующие задачи (приоритет)
 
-| Слой | Файл | Назначение |
-|------|------|------------|
-| Hub Chat | `system-prompt-v2.md` | System prompt для главного чата |
-| Voice | `hub/prompts/jester-sage.md` | Стиль написания постов |
-| Soul | `data/project-souls/{project}.json` → `soulMdContent` | Результат онбординга проекта |
+### 1. Regex backup для content detection
+Groq Gate работает, но добавить regex для "черновик":
+```javascript
+// intent-parser.js, строка 48
+/(?:напи?[шс][иы]?|сделай|создай)\s+(?:черновик\s+)?(?:пост|тред)/i
+```
+Это даст мгновенный ответ без сетевого запроса.
 
-**Исключено из scope (legacy):**
-- Temperature — устарело в 2026
-- Max tokens — не нужно
-- Model selection — не нужно
+### 2. Улучшить ContentGeneratorCard UX
+- Добавить выбор платформы (Twitter, IH, Telegram)
+- Показывать примеры постов пользователя для контекста
+- Сохранять draft автоматически в `ai-drafts.json`
+
+### 3. Per-project phases
+- SPHERE = sniper, VOP = shotgun
+- Сейчас одна фаза на всё
+
+### 4. Тесты
+- Покрыть Groq Gate (mock API)
+- Покрыть intent-parser regex patterns
 
 ---
 
-## Также в очереди:
+## Архитектура Intent Detection
 
-- **Тесты:** Пока 0 файлов (норм для текущей стадии)
-- **docs/STACK.md:** Outdated после рефакторинга
+```
+User message
+    ↓
+/api/intent/parse
+    ↓
+┌─────────────────────┐
+│ 1. Regex detection  │ ← быстро, но ограничено паттернами
+│    (intent-parser)  │
+└─────────────────────┘
+    ↓ (if no match)
+┌─────────────────────┐
+│ 2. Groq Gate        │ ← семантический fallback (~200ms)
+│    (groq-classifier)│
+└─────────────────────┘
+    ↓
+actionCard → Frontend → ContentGeneratorCard
+```
+
+---
+
+## Файлы для контекста
+
+| Файл | Назначение |
+|------|------------|
+| `hub/intent-parser.js` | Regex паттерны для интентов |
+| `hub/groq-classifier.js` | Groq API для семантической детекции |
+| `hub/action-cards.js` | Рендер карточек (ContentGeneratorCard) |
+| `hub/routes/chat.js` | API endpoints `/api/chat`, `/api/intent/parse` |
 
 ---
 
