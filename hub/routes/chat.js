@@ -13,6 +13,7 @@ const { parseIntent, buildActionCard, extractEntities, findContextualLinks } = r
 const { sendToClaude } = require('../chat-api');
 const { getBuddyMessage } = require('../watcher');
 const { classifyIntent } = require('../llm-intent-classifier');
+const { isContentRequest } = require('../groq-classifier');
 
 // POST /api/intent/parse
 router.post('/intent/parse', async (req, res) => {
@@ -44,34 +45,32 @@ router.post('/intent/parse', async (req, res) => {
         // Step 1: Try regex-based detection
         let result = parseIntent(message, context);
 
-        // Step 2: Hybrid logic
-        if (result.confidence >= 80) {
-            // High confidence: use regex result as-is
+        // Step 2: Groq Gate for content detection
+        if (result.intentType === 'generate_content' && result.confidence >= 80) {
+            // High confidence regex hit for content: use as-is
             result.source = 'regex';
-        } else if (result.confidence >= 50) {
-            // Gray zone: ask LLM for clarification
-            const llmResult = await classifyIntent(message, context);
+        } else {
+            // Ask Groq Gate for all other cases
+            const groqResult = await isContentRequest(message);
 
-            if (llmResult.confidence > result.confidence) {
-                // LLM is more confident, rebuild action card
+            if (groqResult.isContentRequest && groqResult.confidence >= 60) {
+                // Groq detected content request: rebuild action card
                 const entities = extractEntities(message, context);
                 const links = findContextualLinks(entities, context);
-                const actionCard = buildActionCard(llmResult.type, entities, links, llmResult.confidence);
+                const actionCard = buildActionCard('generate_content', entities, links, groqResult.confidence);
 
                 result = {
-                    intentType: llmResult.type,
+                    intentType: 'generate_content',
                     entities,
                     links,
                     actionCard,
-                    confidence: llmResult.confidence,
-                    source: 'llm'
+                    confidence: groqResult.confidence,
+                    source: 'groq'
                 };
             } else {
-                result.source = 'regex';
+                // Not a content request: no action card
+                result.source = 'none';
             }
-        } else {
-            // Low confidence: no action card
-            result.source = 'none';
         }
 
         res.json(result);
