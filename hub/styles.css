@@ -681,7 +681,9 @@ body {
 }
 
 .logo-icon {
-    font-size: 1.75rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     animation: breatheGlow var(--breath-duration) ease-in-out infinite;
 }
 
