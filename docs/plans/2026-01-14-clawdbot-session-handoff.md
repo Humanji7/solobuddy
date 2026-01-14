@@ -30,39 +30,41 @@
 - Telegram токен отозван и обновлён
 - Git история очищена через `git-filter-repo`
 
+### 6. Activity Snapshot (NEW)
+- `hub/watcher.js` — добавлен `exportActivitySnapshot()`
+- `hub/scripts/update-activity-snapshot.js` — cron скрипт
+- `data/activity-snapshot.json` — обновляется каждый час
+- Launchd agent: `com.solobuddy.activity-snapshot`
+- Skill обновлён — команда "активность", кнопка 📊
+
+**ClawdBot теперь знает:**
+- Сколько дней проект молчит (`daysSilent`)
+- Коммиты сегодня/вчера/неделя
+- Фаза проекта: active/momentum/cooling/silent/dormant
+
 ---
 
-## Открытый вопрос
+## Решённые вопросы
 
-### hub/ — удалить или превратить в мини-апп?
+### hub/ — удалить или Mini App?
 
-**Текущее состояние:**
-- ~50 файлов (Express + frontend)
-- UI для контента (backlog, drafts, chat)
-- Сейчас не используется — весь flow через Telegram
+**Решение: Ни то, ни другое.**
 
-**Варианты:**
+Hub остаётся как **data layer**:
+- `watcher.js` генерирует контекст активности
+- ClawdBot читает `activity-snapshot.json`
+- UI не нужен — всё через Telegram
 
-1. **Удалить** — всё через Telegram/ClawdBot
-   - Pros: чище, KISS
-   - Cons: теряем визуальный UI
-
-2. **Telegram Mini App** — переделать hub в мини-апп внутри Telegram
-   - Pros: визуальный UI + интеграция
-   - Cons: работа по переделке
-
-3. **Оставить как есть** — запускать когда нужен визуальный интерфейс
-   - Pros: без работы
-   - Cons: два интерфейса, путаница
-
-**Решение:** _[следующая сессия]_
+Можно в будущем:
+- Удалить frontend файлы (`index.html`, `styles.css`)
+- Оставить только `watcher.js`, `config.js`, `scripts/`
 
 ---
 
 ## Полезные команды
 
 ```bash
-# Статус
+# Статус ClawdBot
 clawdbot status
 
 # Логи
@@ -76,6 +78,12 @@ cat ~/clawd/SOUL.md
 
 # Skill
 cat ~/.clawdbot/skills/solobuddy/SKILL.md
+
+# Activity snapshot (ручной запуск)
+node ~/projects/bip-buddy/hub/scripts/update-activity-snapshot.js
+
+# Launchd agent
+launchctl list | grep solobuddy
 ```
 
 ---
@@ -89,3 +97,14 @@ cat ~/.clawdbot/skills/solobuddy/SKILL.md
 | Config | `~/.clawdbot/clawdbot.json` |
 | Auth | `~/.clawdbot/agents/main/agent/auth-profiles.json` |
 | Data | `~/projects/bip-buddy/` |
+| Activity | `~/projects/bip-buddy/data/activity-snapshot.json` |
+| Launchd | `~/Library/LaunchAgents/com.solobuddy.activity-snapshot.plist` |
+
+---
+
+## Следующие шаги (backlog)
+
+- [ ] Twitter extension (`solobuddy-twitter`) — мониторинг watchlist
+- [ ] Soul wizard через Telegram кнопки
+- [ ] Two-agent consultation ("спроси у sphere")
+- [ ] Cleanup hub/ frontend файлов (опционально)
