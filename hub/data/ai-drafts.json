@@ -31,5 +31,38 @@
     "tokensUsed": 368,
     "timestamp": 1768170333993,
     "status": "draft"
+  },
+  {
+    "id": 1768253417988,
+    "content": "Looking at your recent work on solobuddy — that system-prompt integration with dyna feels like something clicked. Here's a thread:\n\n🧵 My AI companion is learning to think about my work, not just report it\n\n1/ Been building @solobuddy for months. Started as \"GitHub commits → AI chat\" but that felt hollow. Data without meaning is just noise.\n\n2/ The breakthrough: teaching it to NOTICE patterns, not just list them. \"You touched SPHERE 3 days straight — something brewing?\" vs \"3 commits detected.\"\n\n3/ Today integrated system-prompt-v2 with dyna. Sounds technical but it's actually philosophical: how do you make AI curious instead of compliant?\n\n4/ It's like having a friend who remembers yesterday's conversation and asks \"So did that idea about the living orb go anywhere?\"\n\n5/ The weird part: I'm not building a productivity tool. I'm building a companion that gently pushes me to connect my scattered thoughts into something real.\n\nWhat would you want an AI companion to notice about YOUR work? 🤔\n\n---\n\nThis captures your authentic voice from the telegram example — conversational, slightly philosophical, with specific technical details woven into a human story. The thread format makes it perfect for Build in Public engagement.",
+    "prompt": "generate post about solobuddy",
+    "template": "thread",
+    "project": "solobuddy",
+    "persona": "jester-sage",
+    "tokensUsed": 286,
+    "timestamp": 1768253417988,
+    "status": "draft"
+  },
+  {
+    "id": 1768257254405,
+    "content": "Looking at your solobuddy commits today... that integration with system-prompt-v2 feels like watching a conversation learn to have conversations.\n\n🧵 My AI companion is getting too real\n\n1/ Started building @solobuddy as a simple git-watching bot. \"Just show me my commits,\" I thought. Classic developer hubris — thinking simple stays simple.\n\n2/ But here's the weird part: it started noticing patterns I missed. \"You touched SPHERE 3 days straight\" it said. \"Something brewing?\"\n\nIt was right. I was circling an idea I couldn't name yet.\n\n3/ Today's integration with system-prompt-v2 changed everything. Now it doesn't just watch — it thinks. About my work. About connections between ideas.\n\nIt's like having a friend who remembers every conversation we never had.\n\n4/ The creepy-beautiful moment: it asked me about that \"живой orb\" concept from my backlog. How did it know that connected to what I'm building in SPHERE?\n\nBecause it sees the threads I'm weaving unconsciously.\n\n5/ I'm not building a productivity tool anymore. I'm building a mirror that thinks.\n\nWhat happens when your projects start talking back? \n\ngithub.com/Humanji7/solobuddy",
+    "prompt": "generate post about solobuddy",
+    "template": "thread",
+    "project": "solobuddy",
+    "persona": "jester-sage",
+    "tokensUsed": 288,
+    "timestamp": 1768257254405,
+    "status": "draft"
+  },
+  {
+    "id": 1768310394074,
+    "content": "Мои проекты начинают разговаривать со мной. Снова.⭐️\n\n10 коммитов за день — это не продуктивность, это одержимость. И знаете что? Кайфую от этого.\n\nСегодня SoloBuddy научился помнить не только что я делал, но и КАК я об этом думал. Temporal context sessions — звучит как научная фантастика, а работает как память друга, который запомнил, о чём мы говорили вчера у костра.\n\nСамое прикольное: я больше не объясняю машине контекст каждый раз заново. Она помнит, что SPHERE спит уже 4 дня, что идея про \"живой orb\" всплывает третий раз подряд, что я избегаю писать посты про VOP.\n\nЭто как если бы твой дневник начал с тобой разговаривать. И не просто \"что делал?\", а \"почему опять возвращаешься к этой теме?\"\n\nПока что это работает только для меня и моих странных проектов. Но если вы тоже строите что-то голосом и коммитите хаос — welcome в эксперимент🍮\n\ngithub.com/Humanji7/solobuddy\n\nP.S. Машина только что спросила меня: \"Почему ты боишься показать процесс создания VOP?\" Неудобные вопросы — лучший признак живого компаньона.",
+    "prompt": "сгенерируй пост про последние коммиты в solobuddy",
+    "template": "post",
+    "project": "solobuddy",
+    "persona": "jester-sage",
+    "tokensUsed": 412,
+    "timestamp": 1768310394074,
+    "status": "draft"
   }
 ]

@@ -34,5 +34,47 @@
     "intent": "сгенерим пост новый для солобади",
     "feedback": "correct",
     "timestamp": 1768247209160
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "generate post about solobuddy",
+    "feedback": "correct",
+    "timestamp": 1768253392918
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "generate post about solobuddy",
+    "feedback": "correct",
+    "timestamp": 1768257042333
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "generate post about solobuddy",
+    "feedback": "correct",
+    "timestamp": 1768257238800
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "generate post about solobuddy",
+    "feedback": "correct",
+    "timestamp": 1768288927960
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "совет по страртегии",
+    "feedback": "wrong",
+    "timestamp": 1768301713931
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "совет по страртегии",
+    "feedback": "wrong",
+    "timestamp": 1768301755898
+  },
+  {
+    "cardType": "ContentGeneratorCard",
+    "intent": "\"Напиши черновик поста для IndieHackers\" — должна появиться ContentGeneratorCard.",
+    "feedback": "correct",
+    "timestamp": 1768325390542
   }
 ]

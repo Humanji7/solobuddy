@@ -7,10 +7,26 @@
       "project": "solobuddy",
       "url": null,
       "createdAt": "2026-01-12T17:42:21.103Z"
+    },
+    {
+      "id": 1768308342019,
+      "content": "У нормальных проектов есть CLAUDE.md, AGENTS.md, архитектурные доки. Но это всё для машин и процессов.\nА что если собрать из этого SOUL.md — файл, который описывает голос и намерение проекта? (ЗЫ: душу тоже соберет тачка, но чтобы тебе болталось комфортнее)😡\n\nИдея: Solobuddy читает душу проекта и генерит посты не generic-AI-голосом, а в тоне самого проекта.\nПока сыро. Но уже на этапе создания SOUL.md начинаешь думать о проекте иначе — это само по себе полезно.\nКто-то делал что-то похожее?",
+      "platform": "telegram",
+      "project": "solobuddy",
+      "url": null,
+      "createdAt": "2026-01-13T12:45:42.019Z"
+    },
+    {
+      "id": 1768342429296,
+      "content": "I'm building myself an assistant because I don't feel like writing myself.\nTalking in tiny chunks through a screen — what is this even for? I went to journalism school, didn't finish, didn't get it back then, and I still don't get it now.\nLet my machine do the understanding for me.\nSoloBuddy — a companion that watches your commits and pushes you to write about them publicly.\nYou connect your repo, it sees what's happening, throws post ideas at you.\nIt doesn't write for you, but gives you a solid starting point.\nJust to be clear — I'm not making a \"partner\".\nI'm making a minimal inner hustler (though of course you can twist the system prompt however you want).\nThere's one insight I want to share, but I'll only reveal it after I get 10 followers.\nThat's my version of build in public.",
+      "platform": "other",
+      "project": "solobuddy",
+      "url": null,
+      "createdAt": "2026-01-13T22:13:49.296Z"
     }
   ],
   "meta": {
     "description": "Voice training dataset - real posts for style learning",
-    "updated": "2026-01-12T17:42:21.103Z"
+    "updated": "2026-01-13T22:13:49.296Z"
   }
 }
