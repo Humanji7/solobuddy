@@ -40,6 +40,17 @@
 
 ---
 
+## Hub Features (Technical backlog)
+
+- [ ] **Twitter Engagement Assistant**
+  - Playwright + авторизованная сессия
+  - 5-10 аккаунтов, проверка раз в 30 мин
+  - Критерий: низкий engagement (свежие твиты с малым кол-вом ответов)
+  - Claude ранжирует где откомментить
+  - UI: карточки с кнопкой "Открыть и ответить"
+
+---
+
 ## Ideas Pool (Raw captures)
 
 - [ ] The "osmosis" metaphor for interaction
