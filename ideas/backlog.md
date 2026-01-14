@@ -6,25 +6,20 @@
 
 ## High Priority (Ready to draft)
 
-- [ ] **Test Idea for UI Verification**
-  - Format: Thread
-
 - [ ] **SPHERE Demo GIF**: Eye tracking touch point
   - Format: GIF + short caption
   - Hook: "when your code starts looking back"
 
-- [ ] **VOP Intro Thread**: What is Decision Cards?
-  - Format: Thread (5-7 tweets)
-  - Hook: "I built a CLI to explain my own code to me"
+- [ ] **Персональный сайт как путешествие**
+  - Format: Thread
+  - Проект: personal-site
+  - Hook: "Сайт-портфолио? Нет. Сайт-существо. 7 комнат, артефакт в конце"
 
 ---
 
 ## Medium Priority (Needs development)
 
 - [ ] **про новые фичи solobuddy**
-  - Format: Thread
-
-- [ ] **SPHERE Demo GIF: Eye tracking touch point**
   - Format: Thread
 
 - [ ] **про живой orb**

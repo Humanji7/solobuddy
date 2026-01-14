@@ -1,96 +1,61 @@
 # ClawdBot Session Handoff
 
 **Дата**: 2026-01-14
-**Статус**: Blocked — нужен Anthropic API key
+**Статус**: ✅ Работает
 
 ---
 
 ## Что сделано
 
-### 1. ClawdBot установлен
-```bash
-clawdbot --version  # 2026.1.13
-```
+### 1. ClawdBot на подписке Claude Max
+- OAuth токен через `claude setup-token`
+- Работает через `anthropic:claude-cli` профиль
+- Срок: 366 дней
 
-### 2. Skill solobuddy создан
-```
-~/.clawdbot/skills/solobuddy/
-├── SKILL.md           # Команды + inline buttons
-├── prompts/
-│   ├── profile.md     # Jester-Sage voice
-│   ├── content.md     # Content generation
-│   └── system.md      # System prompt
-└── references/
-    └── soul-wizard.md # 5-step soul creation wizard
-```
-
-### 3. Telegram бот настроен
-- Token: `***REVOKED***`
+### 2. Telegram бот работает
 - Bot: @solobuddybot
-- Config: `~/.clawdbot/clawdbot.json`
-- Gateway: running (daemon)
-- Status: Telegram ON, OK
+- Токен: `[в ~/.clawdbot/clawdbot.json]`
+- Status: running, polling
 
-### 4. Конфигурация
-```json
-{
-  "gateway": { "mode": "local" },
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "botToken": "8406923708:...",
-      "capabilities": ["inlineButtons"],
-      "dmPolicy": "open",
-      "allowFrom": ["*"]
-    }
-  }
-}
-```
+### 3. Персона настроена
+- `~/clawd/SOUL.md` — Build in Public стратег-кореш
+- `~/clawd/IDENTITY.md` — Солобади
+- Тон: братишка в баре, без мотивашек
+
+### 4. Skill solobuddy
+- Путь: `~/.clawdbot/skills/solobuddy/`
+- Data: `~/projects/bip-buddy/`
+
+### 5. Безопасность
+- Telegram токен отозван и обновлён
+- Git история очищена через `git-filter-repo`
 
 ---
 
-## Текущая проблема
+## Открытый вопрос
 
-При отправке сообщения боту:
-```
-⚠️ Agent failed before reply: No API key found for provider "anthropic"
-```
+### hub/ — удалить или превратить в мини-апп?
 
-**Причина**: ClawdBot использует Claude API для ответов, но API ключ не настроен.
+**Текущее состояние:**
+- ~50 файлов (Express + frontend)
+- UI для контента (backlog, drafts, chat)
+- Сейчас не используется — весь flow через Telegram
 
----
+**Варианты:**
 
-## Что нужно сделать
+1. **Удалить** — всё через Telegram/ClawdBot
+   - Pros: чище, KISS
+   - Cons: теряем визуальный UI
 
-### Вариант 1: Добавить Anthropic API key
+2. **Telegram Mini App** — переделать hub в мини-апп внутри Telegram
+   - Pros: визуальный UI + интеграция
+   - Cons: работа по переделке
 
-```bash
-# Через переменную окружения
-export ANTHROPIC_API_KEY="sk-ant-..."
+3. **Оставить как есть** — запускать когда нужен визуальный интерфейс
+   - Pros: без работы
+   - Cons: два интерфейса, путаница
 
-# Или в конфиг ~/.clawdbot/clawdbot.json
-{
-  "providers": {
-    "anthropic": {
-      "apiKey": "sk-ant-..."
-    }
-  }
-}
-```
-
-Затем перезапустить:
-```bash
-clawdbot daemon restart
-```
-
-### Вариант 2: Использовать другую модель
-
-ClawdBot поддерживает разные провайдеры (OpenAI, Gemini, etc.). Можно настроить другой.
-
-```bash
-clawdbot models list
-clawdbot configure  # интерактивный wizard
-```
+**Решение:** _[следующая сессия]_
 
 ---
 
@@ -103,31 +68,24 @@ clawdbot status
 # Логи
 clawdbot logs --follow
 
-# Проверить каналы
-clawdbot channels status
-
-# Dashboard
-open http://127.0.0.1:18789/
-
 # Перезапуск
 clawdbot daemon restart
+
+# Персона
+cat ~/clawd/SOUL.md
+
+# Skill
+cat ~/.clawdbot/skills/solobuddy/SKILL.md
 ```
 
 ---
 
-## Файлы проекта
+## Файлы
 
 | Что | Где |
 |-----|-----|
+| Персона | `~/clawd/SOUL.md`, `~/clawd/IDENTITY.md` |
 | Skill | `~/.clawdbot/skills/solobuddy/` |
 | Config | `~/.clawdbot/clawdbot.json` |
-| Logs | `~/.clawdbot/logs/gateway.log` |
-| Design doc | `docs/plans/2026-01-14-clawdbot-migration-design.md` |
-
----
-
-## После fix API key
-
-1. Написать боту "меню" — должны появиться кнопки
-2. Проверить что skill solobuddy активируется
-3. Протестировать backlog/drafts/generation flow
+| Auth | `~/.clawdbot/agents/main/agent/auth-profiles.json` |
+| Data | `~/projects/bip-buddy/` |
