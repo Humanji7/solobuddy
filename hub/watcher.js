@@ -341,11 +341,60 @@ async function getBuddyMessage() {
     };
 }
 
+/**
+ * Export full activity snapshot for ClawdBot
+ * Includes raw stats + computed phase + insight message
+ */
+async function exportActivitySnapshot() {
+    const projects = await loadProjects();
+    const snapshot = {
+        generated: new Date().toISOString(),
+        projects: []
+    };
+
+    for (const project of projects) {
+        const scanResult = await scanProject(project.path);
+        const stats = getActivityStats(project.name, scanResult);
+        const insight = generateInsight(stats);
+
+        // Compute phase from type
+        let phase = 'unknown';
+        if (stats.isActive) phase = 'active';
+        else if (stats.daysSilent === 1) phase = 'momentum';
+        else if (stats.daysSilent !== null && stats.daysSilent <= 3) phase = 'cooling';
+        else if (stats.daysSilent !== null && stats.daysSilent <= 7) phase = 'silent';
+        else if (stats.daysSilent !== null && stats.daysSilent > 7) phase = 'dormant';
+
+        snapshot.projects.push({
+            name: stats.name,
+            path: project.path,
+            daysSilent: stats.daysSilent,
+            commitsToday: stats.commitsToday,
+            commitsYesterday: stats.commitsYesterday,
+            commitsThisWeek: stats.commitsThisWeek,
+            isActive: stats.isActive,
+            lastCommitMessage: stats.lastCommitMessage || null,
+            phase,
+            insight: insight.message
+        });
+    }
+
+    // Sort by activity (most active first)
+    snapshot.projects.sort((a, b) => {
+        if (a.isActive && !b.isActive) return -1;
+        if (!a.isActive && b.isActive) return 1;
+        return (a.daysSilent || 999) - (b.daysSilent || 999);
+    });
+
+    return snapshot;
+}
+
 module.exports = {
     scanProject,
     getActivityStats,
     generateInsight,
     scanAllProjects,
     getBuddyMessage,
-    loadProjects
+    loadProjects,
+    exportActivitySnapshot
 };
