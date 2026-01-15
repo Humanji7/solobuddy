@@ -17,6 +17,41 @@
 
 <!-- Новые записи добавляются сверху -->
 
+### 2026-01-15
+
+**🚀 Twitter Quality Gates — DONE**
+
+Реализовал двухуровневую систему фильтрации для Twitter pipeline:
+
+**Что сделано:**
+- L1 Pre-filter (jq): likes≥100, age≤2h, replies≤20, no corp/hiring
+- L2 AI Gate (ClawdBot): SEND/SKIP вердикт с причиной
+- Telegram delivery с 3 retry + exponential backoff
+- Structured JSON logging → `data/twitter/gate.log`
+- Log rotation (>10K lines → trim)
+- Cross-platform locking (shlock/flock/mkdir)
+
+**Файлы:**
+- `scripts/twitter-analyze.sh` — основной скрипт (symlink в ~/.clawdbot/scripts/)
+- `docs/plans/2026-01-15-twitter-quality-gates-design.md` — design doc
+
+**Code Review прошёл:** 3 Important fixes применены (seen-tweets timing, empty analysis, Unicode)
+
+**Тесты:** L1 filter ✓, concurrent lock ✓, full pipeline ✓
+
+---
+
+**📋 Что дальше (предложения):**
+
+1. **Мониторинг** — дашборд из gate.log (L1/L2 pass rates, delivery success)
+2. **Dry-run режим** — `DRY_RUN=1` для тестирования без Telegram spam
+3. **A/B пороги** — вынести thresholds в отдельный конфиг для экспериментов
+4. **Unit-тесты** — `tests/twitter-analyze-l1.test.sh` с edge cases
+5. **Twitter Expert integration** — подключить skill для более умного L2 анализа
+6. **Backlog items** — Telegram bot commands, activity dashboard
+
+---
+
 ### 2026-01-14
 
 **🔬 Deep Research: Twitter/X Best Practices для BIP**
