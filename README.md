@@ -1,130 +1,75 @@
-# 🧬 SoloBuddy
+# SoloBuddy
 
-> AI-powered Build-in-Public companion for solo creators
+> Dotfiles for AI-Augmented Creators
 
-## What is this?
+## Warning
 
-SoloBuddy is a **local dashboard + AI buddy** that helps you stay consistent with your projects.
-
-**Not another productivity app.** This is a sharp partner that:
-- Watches your repos and pokes you when you abandon them
-- Suggests posts based on real git activity
-- Gives your projects a voice (SOUL Protocol)
-- Never says "great job!" for trivial commits
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| 🔍 **Git Watcher** | Proactive buddy messages based on repo activity |
-| 🧬 **Project Voice** | Each project speaks with its own personality |
-| 📝 **Draft Generator** | Turn commits into shareable content |
-| 🔗 **GitHub OAuth** | Auto-discover your repositories |
-| ⚡ **Intent-Based AI** | Understands what you actually need |
+Review the code before using. This is **my** workflow — fork and customize.
 
 ## Quick Start
 
-**Requirements:** Node.js 18+, npm
-
 ```bash
-# Clone
 git clone https://github.com/Humanji7/solobuddy.git
 cd solobuddy
 
-# Setup
-cp hub/.env.example hub/.env
-# Add your API keys to hub/.env (ANTHROPIC_API_KEY required!)
+# Setup symlinks
+cd .ai && ./setup.sh
 
-cp data/projects.example.json data/projects.json
-# Add your projects to data/projects.json
-
-# Run
-cd hub && npm install && npm start
+# Or manual:
+ln -sf $(pwd)/.ai/skills/solobuddy ~/.clawdbot/skills/solobuddy
 ```
 
-Open http://localhost:3000
+## What's Inside
 
-## Configuration
+| Directory | Purpose |
+|-----------|---------|
+| `.ai/` | ClawdBot skills & scripts |
+| `ideas/` | Content backlog |
+| `drafts/` | Work in progress |
+| `docs/` | Guides & research |
+| `data/` | Runtime (gitignored) |
 
-### Environment Variables
+## Three Ways to Use
 
+### 1. Fork & Customize
 ```bash
-# hub/.env
-GITHUB_CLIENT_ID=your_github_oauth_id
-GITHUB_CLIENT_SECRET=your_github_oauth_secret
-SESSION_SECRET=your_session_secret
-ANTHROPIC_API_KEY=your_claude_api_key
+# Edit voice
+vim PROFILE.md
+
+# Edit config
+cp .ai/config.example.json5 ~/.clawdbot/config.json
 ```
 
-### Projects File
-
-```json
-// data/projects.json
-{
-    "projects": [
-        {
-            "name": "my-project",
-            "path": "/path/to/project",
-            "github": "https://github.com/you/project"
-        }
-    ]
-}
+### 2. Cherry-pick
+```bash
+# Grab specific skill
+cp -r .ai/skills/twitter-expert ~/.clawdbot/skills/
 ```
 
-## SOUL Protocol
-
-Give your project a voice. Create `SOUL.md` in your project root:
-
-```markdown
-# SOUL — My Project
-
-## Identity
-**Name**: ProjectName
-**Archetype**: creator | explorer | rebel | sage
-**Pronoun**: I | we | it
-
-## Purpose
-One sentence — why I exist.
-
-## Tone
-**Primary**: friendly | sharp | mystical | playful
-**Secondary**: with humor | but honest | softly
-
-## Key Phrases
-- "Characteristic phrase 1"
-- "Characteristic phrase 2"
-```
-
-See [SOUL.md](SOUL.md) for full specification.
+### 3. Follow Along
+Read `ideas/session-log.md` for Build-in-Public insights.
 
 ## Philosophy
 
-> 🏛️ Your project is a unique temple in the desert.  
-> Marketing isn't selling the temple.  
+> Your project is a unique temple in the desert.
+> Marketing isn't selling the temple.
 > Marketing is building the road so others can find it.
 
-**Consistency > Intensity.** Small updates build the road.
+See [docs/BUILD_IN_PUBLIC.md](docs/BUILD_IN_PUBLIC.md)
 
-## For AI Agents
+## Voice: Jester-Sage
 
-→ Start with [CLAUDE.md](CLAUDE.md)
+| Aspect | Description |
+|--------|-------------|
+| Tone | Ironic, Raw, Philosophical |
+| Style | Honest process, not polish |
 
-## Structure
-
-```
-solobuddy/
-├── hub/                # Web interface (Node.js + Express)
-├── data/               # Projects and souls storage
-├── docs/               # Documentation
-├── ideas/              # Content backlog
-├── drafts/             # Work in progress
-└── SOUL.md             # Protocol specification
-```
+See [PROFILE.md](PROFILE.md) for full definition.
 
 ## License
 
 MIT — do whatever you want.
 
-## Author
+---
 
-Built by [@Humanji7](https://github.com/Humanji7) as a Build-in-Public experiment.
+Built by [@Humanji7](https://github.com/Humanji7)
