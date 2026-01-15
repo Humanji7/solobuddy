@@ -17,6 +17,44 @@
 
 <!-- Новые записи добавляются сверху -->
 
+### 2026-01-14
+
+**🔬 Deep Research: Twitter/X Best Practices для BIP**
+
+Провёл глубокое исследование для создания Twitter Expert AI skill:
+
+1. **Топ инди-хакеры** — паттерны Levels, Marc Lou, Tony Dinh, Danny Postma
+   - Levels: "Strategic sharing — show enough to prove, not everything" ($3M/yr)
+   - Marc Lou: Personal brand > product brand (1K→45K followers за год)
+   - Tony Dinh: "People don't care about products, care about you" (130K followers)
+
+2. **Алгоритм 2025** — 1 RT = 20 likes, первые 2 часа критичны
+   - Native video: 2-4x reach vs text
+   - Threads 3-5 tweets: 40-60% больше impressions
+   - External links: -30-50% penalty (workaround: first reply)
+
+3. **Hook formulas** — Ship30for30 + психология (Zeigarnik Effect)
+   - Curiosity Gap, Contrarian, Transformation, Specific Numbers
+   - Odd numbers > round, stories > generic advice
+
+4. **BIP insights** — 81% must trust to buy (Edelman 2025)
+   - Share failures, не только wins
+   - Revenue WITH context (profit, costs, reality)
+   - Filter: "Feels performative? Don't. Feels valuable? Do."
+
+5. **Anti-patterns** — engagement bait = shadow ban risk
+   - Generic motivational quotes ignored
+   - Corporate polish loses in age of AI content
+   - Threads >10 tweets: <30% completion
+
+**Файлы:**
+- `docs/research/twitter-best-practices-2025.md` — полный отчёт (9K words, 40+ sources)
+- `docs/research/twitter-expert-prompt-guide.md` — quick reference (templates, checklists)
+- `docs/research/RESEARCH_SUMMARY.md` — TL;DR + key findings
+
+**Insight для BIP Buddy:**
+Jester-Sage voice spec теперь имеет data-backed обоснование. "Authentic + specific + frequent" побеждает polish.
+
 ### 2026-01-08
 
 **🔍 Сканирование сессий (Hold Osmosis, Face Recognition, VOP):**
