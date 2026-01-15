@@ -1,41 +1,36 @@
-> 🚨 **Read ~/.agent/GUPP.md FIRST** — mandatory startup gate
+> Read ~/.agent/GUPP.md FIRST — mandatory startup gate
 
 # SoloBuddy
 
 > Agent entry point. Read this first.
 
-## Quick Start
+## Structure
 
-```bash
-cd hub && npm start
 ```
-→ http://localhost:3000
-
-## Server
-
-Before starting, check if already running:
-```bash
-lsof -i :3000
+solobuddy/
+├── .ai/              # ClawdBot skills & scripts
+├── ideas/            # Content backlog
+├── drafts/           # Work in progress
+├── docs/             # Documentation
+├── data/             # Runtime (gitignored)
+└── legacy/hub/       # Deprecated web UI
 ```
-- If busy → don't start (or `kill <PID>` first)
-- If free → start normally
 
 ## Project State
 
 | What | Where |
 |------|-------|
 | Voice & identity | [PROFILE.md](PROFILE.md) |
-| How we work | [WORKFLOW.md](WORKFLOW.md) |
-| Philosophy | [BUILD_IN_PUBLIC.md](BUILD_IN_PUBLIC.md) |
+| How we work | [docs/WORKFLOW.md](docs/WORKFLOW.md) |
+| Philosophy | [docs/BUILD_IN_PUBLIC.md](docs/BUILD_IN_PUBLIC.md) |
 
-## Technical
+## AI Configuration
 
 | What | Where |
 |------|-------|
-| **Project Index** | [PROJECT_INDEX.md](PROJECT_INDEX.md) — read this for codebase overview |
-| Stack & architecture | [docs/STACK.md](docs/STACK.md) |
-| Commands | [docs/COMMANDS.md](docs/COMMANDS.md) |
-| Tests | [docs/TESTS.md](docs/TESTS.md) |
+| Skills | [.ai/skills/](.ai/skills/) |
+| Scripts | [.ai/scripts/](.ai/scripts/) |
+| Setup | [.ai/setup.sh](.ai/setup.sh) |
 
 ## Content
 
@@ -45,15 +40,8 @@ lsof -i :3000
 | Session log | [ideas/session-log.md](ideas/session-log.md) |
 | Drafts | [drafts/](drafts/) |
 
-## Hub
-
-Web interface in `hub/`:
-- `server.js` — Express API
-- `app.js` — Frontend logic
-- `github-api.js` — GitHub OAuth
-
 ## Rules
 
-1. **Silent logging** — Don't interrupt during dev
-2. **Jester-Sage voice** — No corporate speak
-3. **Small frequent > rare epic** — Consistency wins
+1. **Jester-Sage voice** — No corporate speak
+2. **Small frequent > rare epic** — Consistency wins
+3. **Show the mess** — Raw process, not polish
