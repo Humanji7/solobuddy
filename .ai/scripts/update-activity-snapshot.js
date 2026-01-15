@@ -1,21 +1,25 @@
 #!/usr/bin/env node
 /**
  * Cron script: updates activity-snapshot.json hourly
- * Run: node hub/scripts/update-activity-snapshot.js
+ * Run: node .ai/scripts/update-activity-snapshot.js
  */
 
 const path = require('path');
 const fs = require('fs').promises;
 
-// Change to hub directory for proper module resolution
-process.chdir(path.join(__dirname, '..'));
-
-const watcher = require('../watcher.js');
-
-const OUTPUT_PATH = path.join(__dirname, '..', '..', 'data', 'activity-snapshot.json');
+// Project root
+const PROJECT_ROOT = path.join(__dirname, '..', '..');
+const LEGACY_HUB = path.join(PROJECT_ROOT, 'legacy', 'hub');
+const OUTPUT_PATH = path.join(PROJECT_ROOT, 'data', 'activity-snapshot.json');
 
 async function main() {
     try {
+        // Change to legacy/hub directory for watcher module resolution
+        process.chdir(LEGACY_HUB);
+
+        // Dynamic require after chdir
+        const watcher = require(path.join(LEGACY_HUB, 'watcher.js'));
+
         const snapshot = await watcher.exportActivitySnapshot();
 
         await fs.writeFile(OUTPUT_PATH, JSON.stringify(snapshot, null, 2));
