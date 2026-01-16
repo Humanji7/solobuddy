@@ -6,10 +6,6 @@
 
 ## High Priority (Ready to draft)
 
-- [ ] **SPHERE Demo GIF**: Eye tracking touch point
-  - Format: GIF + short caption
-  - Hook: "when your code starts looking back"
-
 - [ ] **Персональный сайт как путешествие**
   - Format: Thread
   - Проект: personal-site
