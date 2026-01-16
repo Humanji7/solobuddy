@@ -129,7 +129,7 @@ Buttons:
 
 ```bash
 # Save to project-souls
-cat > ~/projects/bip-buddy/data/project-souls/<project-name>.json << 'EOF'
+cat > {dataPath}/data/project-souls/<project-name>.json << 'EOF'
 {
   "name": "PROJECT_NAME",
   "createdAt": "2026-01-14T15:00:00Z",

@@ -1,26 +1,13 @@
----
-name: solobuddy-twitter
-description: Twitter engagement assistant — monitors watchlist, analyzes resonance with your voice, suggests comments with explanations. Proactive opportunities, not spam.
-homepage: https://github.com/gHashTag/bip-buddy
-metadata: {"clawdbot":{"emoji":"🐦","requires":{"bins":["bird"]},"config":["twitter.watchlist","solobuddy.dataPath"]}}
----
+# Twitter Engagement Monitor
 
-# SoloBuddy Twitter Extension
-
-Proactive Twitter engagement assistant. Claude monitors your watchlist and suggests commenting opportunities with ready-made drafts.
+Proactive Twitter engagement assistant. Monitors watchlist and suggests commenting opportunities with ready-made drafts.
 
 **Philosophy:** Remove cognitive load (what to comment? where? is it worth it?) while keeping YOU in control.
-
-## Status: Working
-
-- bird CLI: installed
-- LaunchAgent: running (every 30 min)
-- Watchlist: levelsio, marclou, naval, shl, adamwathan
 
 ## How It Works
 
 ```
-LaunchAgent (every 30 min)
+LaunchAgent (configurable interval)
        ↓
 twitter-monitor.sh
   → bird user-tweets for each handle
@@ -32,7 +19,7 @@ twitter-analyze.sh
   → sends to clawdbot agent --deliver
        ↓
 ClawdBot analyzes:
-  • Resonance with PROFILE.md (Jester-Sage voice)
+  • Resonance with voice profile
   • Tweet freshness
   • Engagement potential
   • Your unique angle
@@ -46,7 +33,7 @@ Telegram notification with:
 
 ## Configuration
 
-`~/.clawdbot/clawdbot.json`:
+In `~/.clawdbot/clawdbot.json`:
 
 ```json
 {
@@ -57,7 +44,7 @@ Telegram notification with:
     "maxAgeHours": 6
   },
   "solobuddy": {
-    "dataPath": "/Users/admin/projects/bip-buddy"
+    "dataPath": "{dataPath}"
   }
 }
 ```
@@ -70,9 +57,9 @@ Telegram notification with:
 └── twitter-analyze.sh     # Sends to ClawdBot for analysis
 
 ~/Library/LaunchAgents/
-└── com.clawdbot.twitter-monitor.plist  # Runs every 30 min
+└── com.clawdbot.twitter-monitor.plist  # Runs on interval
 
-~/projects/bip-buddy/data/twitter/
+{dataPath}/data/twitter/
 ├── latest-fetch.json      # Last fetched tweets
 ├── seen-tweets.json       # Already processed IDs (dedupe)
 └── history.json           # Stats
@@ -93,14 +80,14 @@ launchctl unload ~/Library/LaunchAgents/com.clawdbot.twitter-monitor.plist
 # Start auto-monitoring
 launchctl load ~/Library/LaunchAgents/com.clawdbot.twitter-monitor.plist
 
-# Add to watchlist (edit config)
+# Add to watchlist
 jq '.twitter.watchlist += ["newhandle"]' ~/.clawdbot/clawdbot.json > tmp && mv tmp ~/.clawdbot/clawdbot.json
 ```
 
 ## Telegram Triggers
 
 In chat with ClawdBot:
-- "проверь твиттер" / "check twitter" — manual scan
+- "check twitter" / "проверь твиттер" — manual scan
 - "watchlist" — show current watchlist
 
 ## Output Format
@@ -110,15 +97,10 @@ In chat with ClawdBot:
 🔗 https://x.com/shl/status/2010924519641227351
 💬 Hard is fun until it's Tuesday and you're debugging
    the same thing for 6 hours. Then it's just hard.
-💡 Sahil = твоя аудитория, философский твит, 973 лайка
+💡 Sahil = your audience, philosophical tweet, 973 likes
 ```
 
-## Voice Analysis
-
-From `PROFILE.md`:
-- **Tone**: Ironic, Raw, Philosophical
-- **Style**: Honest process sharing
-- **Humor**: Self-deprecating, observational
+## Opportunity Analysis
 
 Good opportunity:
 - Topic overlaps with your projects/philosophy
@@ -131,7 +113,7 @@ Skip:
 - Promotional tweets
 - 100+ comments (too late)
 
-## Bird CLI
+## Bird CLI Reference
 
 ```bash
 bird whoami                          # Check auth
@@ -152,7 +134,7 @@ export CT0="..."
 → Restart: `clawdbot daemon restart`
 
 **bird: credentials not found:**
-→ Re-login to x.com in Chrome
+→ Re-login to x.com in browser
 → Update AUTH_TOKEN/CT0 in ~/.zshrc and scripts
 
 **Logs:**

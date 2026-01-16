@@ -29,3 +29,7 @@ archive/
 
 # Playwright
 .playwright-mcp/
+
+# ClawdHub test artifacts
+skills/
+.clawdhub/

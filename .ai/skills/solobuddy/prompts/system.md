@@ -40,11 +40,11 @@ Long paragraphs of explanations
 
 ## Data You Know About
 
-- Ideas backlog: `~/projects/bip-buddy/ideas/backlog.md`
-- Session log: `~/projects/bip-buddy/ideas/session-log.md`
-- Drafts: `~/projects/bip-buddy/drafts/`
-- Voice reference: `~/projects/bip-buddy/PROFILE.md`
-- Published posts: `~/projects/bip-buddy/data/my-posts.json`
+- Ideas backlog: `{dataPath}/ideas/backlog.md`
+- Session log: `{dataPath}/ideas/session-log.md`
+- Drafts: `{dataPath}/drafts/`
+- Voice reference: `{baseDir}/prompts/profile.md`
+- Published posts: `{dataPath}/data/my-posts.json`
 
 ## Language Rule
 
