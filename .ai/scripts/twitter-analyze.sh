@@ -169,7 +169,7 @@ FILTERED_TWEETS=$(echo "$NEW_TWEETS" | jq --argjson minLikes "$L1_MIN_LIKES" \
     --argjson maxReplies "$L1_MAX_REPLIES" '
     map(select(
         .likeCount >= $minLikes and
-        ((now - (.createdAt | fromdateiso8601)) <= $maxAge) and
+        ((now - (.createdAt | strptime("%a %b %d %H:%M:%S %z %Y") | mktime)) <= $maxAge) and
         .replyCount <= $maxReplies and
         (.author.username | test("(Inc|HQ|Official|_io)$"; "i") | not) and
         (.text | test("hiring|join us|we.re (hiring|looking)|присоединяйся|вакансия"; "i") | not)
