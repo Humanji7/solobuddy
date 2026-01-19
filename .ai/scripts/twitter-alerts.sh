@@ -17,6 +17,11 @@ TWEET_LIKES_THRESHOLD=50
 TWEET_CHECK_HOURS=2
 FOLLOWER_GROWTH_THRESHOLD=10
 
+# Validate numeric thresholds
+[[ "$TWEET_LIKES_THRESHOLD" =~ ^[0-9]+$ ]] || { echo "ERROR: TWEET_LIKES_THRESHOLD must be numeric"; exit 1; }
+[[ "$TWEET_CHECK_HOURS" =~ ^[0-9]+$ ]] || { echo "ERROR: TWEET_CHECK_HOURS must be numeric"; exit 1; }
+[[ "$FOLLOWER_GROWTH_THRESHOLD" =~ ^[0-9]+$ ]] || { echo "ERROR: FOLLOWER_GROWTH_THRESHOLD must be numeric"; exit 1; }
+
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
@@ -88,6 +93,10 @@ alert_sent() {
     local ref_id="$2"
     local count
 
+    # Escape single quotes for SQL injection protection
+    alert_type="${alert_type//\'/\'\'}"
+    ref_id="${ref_id//\'/\'\'}"
+
     count=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM alerts_sent WHERE alert_type='$alert_type' AND ref_id='$ref_id';")
     [ "$count" -gt 0 ]
 }
@@ -96,6 +105,10 @@ alert_sent() {
 mark_alert_sent() {
     local alert_type="$1"
     local ref_id="$2"
+
+    # Escape single quotes for SQL injection protection
+    alert_type="${alert_type//\'/\'\'}"
+    ref_id="${ref_id//\'/\'\'}"
 
     sqlite3 "$DB_FILE" "INSERT INTO alerts_sent (alert_type, ref_id) VALUES ('$alert_type', '$ref_id');"
 }
@@ -155,6 +168,10 @@ ${likes} лайков
         if send_telegram "$message"; then
             mark_alert_sent "tweet_growth" "$tweet_id"
             ALERT_COUNT=$((ALERT_COUNT + 1))
+        else
+            # Mark as sent anyway to prevent infinite retry loops
+            log "  WARNING: Failed to send alert, marking as sent to prevent retries"
+            mark_alert_sent "tweet_growth" "$tweet_id"
         fi
     done <<< "$GROWING_TWEETS"
 
@@ -209,6 +226,10 @@ if [ -n "$FOLLOWER_GROWTH" ]; then
         if send_telegram "$message"; then
             mark_alert_sent "follower_growth" "$today_ref"
             log "  Sent follower growth alert"
+        else
+            # Mark as sent anyway to prevent infinite retry loops
+            log "  WARNING: Failed to send alert, marking as sent to prevent retries"
+            mark_alert_sent "follower_growth" "$today_ref"
         fi
     fi
 else
