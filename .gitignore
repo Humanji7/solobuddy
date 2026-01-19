@@ -23,6 +23,8 @@ data/project-souls/*.json
 !data/project-souls/*.example.json
 data/twitter/
 !data/twitter/.gitkeep
+data/bip.db
+sqlite_mcp_server.db
 
 # Internal archive
 archive/
