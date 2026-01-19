@@ -214,3 +214,7 @@ else
 fi
 
 log "Twitter mirror finished successfully"
+
+# Run alerts check
+log "Running alerts check..."
+"$SCRIPT_DIR/twitter-alerts.sh"
