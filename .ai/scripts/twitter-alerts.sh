@@ -72,10 +72,15 @@ log "Starting Twitter alerts check"
 send_telegram() {
     local message="$1"
     local response
+    local json_payload
+
+    # Use jq with stdin (-Rsc) to properly escape newlines and output compact JSON
+    json_payload=$(printf '%s' "$message" | jq -Rsc --arg chat_id "$CHAT_ID" \
+        '{chat_id: $chat_id, text: ., parse_mode: "HTML"}')
 
     response=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
         -H "Content-Type: application/json" \
-        -d "{\"chat_id\":\"${CHAT_ID}\",\"text\":\"${message}\",\"parse_mode\":\"HTML\"}")
+        -d "$json_payload")
 
     if echo "$response" | jq -e '.ok' > /dev/null 2>&1; then
         log "  Telegram message sent successfully"
@@ -184,6 +189,7 @@ fi
 log "Checking follower growth..."
 
 # Compare latest follower count with 24h ago
+# Only alert if we have baseline data from 24+ hours ago (no COALESCE fallback)
 FOLLOWER_GROWTH=$(sqlite3 -separator '|' "$DB_FILE" << SQL
 WITH latest AS (
   SELECT followers, snapshot_at
@@ -200,11 +206,12 @@ yesterday AS (
 )
 SELECT
   l.followers AS current_followers,
-  COALESCE(y.followers, l.followers) AS yesterday_followers,
-  (l.followers - COALESCE(y.followers, l.followers)) AS growth
+  y.followers AS yesterday_followers,
+  (l.followers - y.followers) AS growth
 FROM latest l
-LEFT JOIN yesterday y ON 1=1
-WHERE (l.followers - COALESCE(y.followers, l.followers)) >= ${FOLLOWER_GROWTH_THRESHOLD};
+INNER JOIN yesterday y ON 1=1
+WHERE y.followers IS NOT NULL
+  AND (l.followers - y.followers) >= ${FOLLOWER_GROWTH_THRESHOLD};
 SQL
 )
 
