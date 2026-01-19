@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="$HOME/projects/bip-buddy"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
 DB_FILE="$DATA_DIR/bip.db"
 
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS tweets (
   tweet_id TEXT UNIQUE NOT NULL,
   content TEXT NOT NULL,
   created_at DATETIME NOT NULL,
-  snapshot_at DATETIME NOT NULL,
+  snapshot_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   likes INTEGER DEFAULT 0,
   replies INTEGER DEFAULT 0,
   retweets INTEGER DEFAULT 0,
@@ -41,7 +42,7 @@ CREATE TABLE IF NOT EXISTS tweets (
 -- История профиля
 CREATE TABLE IF NOT EXISTS profile_snapshots (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  snapshot_at DATETIME NOT NULL,
+  snapshot_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   followers INTEGER DEFAULT 0,
   following INTEGER DEFAULT 0
 );
@@ -50,11 +51,11 @@ CREATE TABLE IF NOT EXISTS profile_snapshots (
 CREATE TABLE IF NOT EXISTS drafts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content TEXT NOT NULL,
-  source TEXT NOT NULL,            -- 'session', 'watchlist', 'manual'
+  source TEXT NOT NULL CHECK (source IN ('session', 'watchlist', 'manual')),
   source_ref TEXT,
-  status TEXT NOT NULL DEFAULT 'idea',  -- 'idea', 'draft', 'reminded', 'posted', 'dropped'
+  status TEXT NOT NULL DEFAULT 'idea' CHECK (status IN ('idea', 'draft', 'reminded', 'posted', 'dropped')),
   remind_at DATETIME,
-  created_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   posted_at DATETIME,
   posted_tweet_id TEXT
 );
@@ -64,7 +65,7 @@ CREATE TABLE IF NOT EXISTS alerts_sent (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   alert_type TEXT NOT NULL,
   ref_id TEXT NOT NULL,
-  sent_at DATETIME NOT NULL
+  sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for common queries
@@ -77,7 +78,7 @@ CREATE INDEX IF NOT EXISTS idx_alerts_type_ref ON alerts_sent(alert_type, ref_id
 SQL
 
 if [ $? -eq 0 ]; then
-    log "✓ Database initialized successfully"
+    log "SUCCESS: Database initialized successfully"
     log "  Location: $DB_FILE"
 
     # Verify tables
@@ -87,6 +88,6 @@ if [ $? -eq 0 ]; then
         log "    - $table"
     done
 else
-    log "✗ Database initialization failed"
+    log "ERROR: Database initialization failed"
     exit 1
 fi
