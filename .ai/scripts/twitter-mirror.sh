@@ -20,6 +20,17 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
+# Temp files (initialized empty for cleanup trap)
+TWEETS_JSON=""
+TEMP_LOG=""
+
+# Cleanup on exit
+cleanup() {
+    [ -n "$TWEETS_JSON" ] && rm -f "$TWEETS_JSON" 2>/dev/null || true
+    [ -n "$TEMP_LOG" ] && rm -f "$TEMP_LOG" 2>/dev/null || true
+}
+trap cleanup EXIT
+
 # Check dependencies
 if ! command -v bird &> /dev/null; then
     log "ERROR: bird CLI not found. Install with: npm i -g @steipete/bird"
@@ -102,6 +113,12 @@ for i in $(seq 0 $((TWEET_COUNT - 1))); do
     REPLIES=$(jq -r ".[$i].replyCount // 0" < "$TWEETS_JSON" 2>/dev/null)
     RETWEETS=$(jq -r ".[$i].retweetCount // 0" < "$TWEETS_JSON" 2>/dev/null)
     VIEWS=$(jq -r ".[$i]._raw.views.count // 0" < "$TWEETS_JSON" 2>/dev/null)
+
+    # Validate numeric fields (SQL injection protection)
+    [[ "$LIKES" =~ ^[0-9]+$ ]] || LIKES=0
+    [[ "$REPLIES" =~ ^[0-9]+$ ]] || REPLIES=0
+    [[ "$RETWEETS" =~ ^[0-9]+$ ]] || RETWEETS=0
+    [[ "$VIEWS" =~ ^[0-9]+$ ]] || VIEWS=0
 
     # Convert Twitter date format to SQLite datetime
     # Example: "Sat Jan 17 23:25:16 +0000 2026" -> "2026-01-17 23:25:16"
