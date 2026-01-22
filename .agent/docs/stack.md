@@ -154,6 +154,76 @@ curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
 
 ---
 
+## ClawdBot (Telegram-бот для AI)
+
+Автономный AI-бот в Telegram, работает через ClawdBot framework.
+
+### Бот
+
+**@solobuddybot** (имя: Солобади) — принимает сообщения и отвечает через Anthropic API.
+
+### Конфигурация
+
+| Файл | Назначение |
+|------|------------|
+| `~/.clawdbot/clawdbot.json` | Основной конфиг (каналы, агенты) |
+| `~/.clawdbot/agents/main/agent/auth-profiles.json` | OAuth токены (Anthropic, OpenAI) |
+
+### Полезные команды
+
+```bash
+# Диагностика
+clawdbot doctor
+
+# Отправить сообщение
+clawdbot message send --channel telegram --to 6536979676 --message "Test"
+
+# Настройка
+clawdbot configure --section model
+```
+
+### Перелогинивание Anthropic (если "OAuth token refresh failed")
+
+**Симптомы:** Бот не отвечает, в логах `OAuth token refresh failed for anthropic`
+
+**Диагностика:**
+```bash
+clawdbot doctor
+# Смотрим секцию "Model auth" — если "expired", нужен новый токен
+```
+
+**Решение:**
+
+1. Получи новый OAuth токен:
+   ```bash
+   claude setup-token
+   ```
+   (откроется браузер для авторизации)
+
+2. Скопируй токен `sk-ant-oat01-...`
+
+3. Обнови в `~/.clawdbot/agents/main/agent/auth-profiles.json`:
+   ```json
+   "anthropic:claude-cli": {
+     "type": "oauth",
+     "provider": "anthropic",
+     "access": "sk-ant-oat01-НОВЫЙ_ТОКЕН",
+     ...
+   }
+   ```
+
+4. Проверь:
+   ```bash
+   clawdbot doctor
+   clawdbot message send --channel telegram --to 6536979676 --message "Test"
+   ```
+
+### Срок жизни токена
+
+OAuth токен Anthropic живёт ~7 дней. Поле `expires` в auth-profiles.json — Unix timestamp в миллисекундах.
+
+---
+
 ## launchd
 
 macOS native scheduler (replacement for cron).
