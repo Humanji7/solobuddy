@@ -1,9 +1,0 @@
-{
-    "projects": [
-        {
-            "name": "my-project",
-            "path": "/path/to/your/project",
-            "github": "https://github.com/username/my-project"
-        }
-    ]
-}
