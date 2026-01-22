@@ -8,33 +8,51 @@
 
 **One-liner:** Twitter copilot for Build in Public creators — mirrors activity, tracks growth, sends alerts
 
-**Tech Stack:** Bash, SQLite, Bird CLI, Telegram Bot API, launchd
+**Tech Stack:** Bash, SQLite, Bird CLI, ClawdBot (@solobuddybot), launchd
 
 ---
 
 ## Current Architecture (Phase 1)
 
 ```
-launchd (every 15min)
-    ↓
-twitter-mirror.sh
-    ↓
-Bird CLI → JSON → SQLite (bip.db)
-    ↓
-twitter-alerts.sh
-    ↓
-Telegram Bot API → User
+┌─────────────────────────────────────────────────────────┐
+│  launchd                                                │
+│  ├── com.bipbuddy.twitter-mirror (every 2h)             │
+│  ├── com.clawdbot.twitter-monitor (watchlist)           │
+│  └── com.clawdbot.gateway (постоянно)                   │
+└─────────────────────────────────────────────────────────┘
+           │                    │
+           ▼                    ▼
+┌──────────────────┐   ┌──────────────────┐
+│ twitter-mirror.sh│   │ twitter-monitor.sh│
+│ (мои твиты)      │   │ (watchlist)       │
+└────────┬─────────┘   └────────┬─────────┘
+         │                      │
+         ▼                      ▼
+    Bird CLI              Bird CLI
+         │                      │
+         ▼                      ▼
+┌──────────────────────────────────────────┐
+│              SQLite (bip.db)             │
+└──────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│ twitter-alerts.sh│ → ClawdBot (@solobuddybot) → Telegram
+└──────────────────┘
 ```
 
 ### Quick Reference
 
-| Component | Path |
-|-----------|------|
-| Data collection | `.ai/scripts/twitter-mirror.sh` |
-| Alerts | `.ai/scripts/twitter-alerts.sh` |
-| DB init | `.ai/scripts/init-db.sh` |
-| Database | `data/bip.db` |
-| Telegram config | `~/.clawdbot/clawdbot.json` |
+| Component | Path | Schedule |
+|-----------|------|----------|
+| My tweets mirror | `.ai/scripts/twitter-mirror.sh` | каждые 2ч |
+| Watchlist monitor | `.ai/scripts/twitter-monitor.sh` | по расписанию |
+| Alerts | `.ai/scripts/twitter-alerts.sh` | после mirror |
+| DB init | `.ai/scripts/init-db.sh` | — |
+| Database | `data/bip.db` | — |
+| ClawdBot config | `~/.clawdbot/clawdbot.json` | — |
+| ClawdBot OAuth | `~/.clawdbot/agents/main/agent/auth-profiles.json` | ~7 дней |
 
 ---
 
@@ -53,17 +71,26 @@ Telegram Bot API → User
 
 ```
 bip-buddy/
-├── .agent/           # AI infrastructure
-│   ├── MAIN.md       # This file
-│   ├── docs/         # Architecture, conventions
-│   ├── workflows/    # /command workflows
-│   └── scripts/      # Automation
-├── .ai/              # Scripts and skills
-│   ├── scripts/      # Bash scripts
-│   └── skills/       # ClawdBot skills
+├── .agent/           # AI agent context (Claude Code, Cursor, etc.)
+│   ├── MAIN.md       # This file — single source of truth
+│   ├── HOOK.md       # Current task / handoff state
+│   └── docs/         # Architecture, conventions, stack
+│
+├── .ai/              # ClawdBot runtime
+│   ├── scripts/      # Bash: twitter-mirror, alerts, monitor
+│   ├── skills/       # ClawdBot skills (solobuddy)
+│   └── agents/       # Workflows, prompts
+│
 ├── data/             # Runtime data (gitignored)
-└── docs/             # Documentation
-    └── plans/        # Design documents
+│   └── bip.db        # SQLite database
+│
+├── docs/             # Philosophy & strategy
+│   ├── BUILD_IN_PUBLIC.md
+│   └── TWITTER.md
+│
+├── ideas/            # Content ideas, concepts
+├── drafts/           # Work-in-progress posts
+└── archive/          # Old handoffs, prompts
 ```
 
 ---
@@ -131,4 +158,4 @@ When approaching context limit:
 
 ---
 
-*Last updated: 2026-01-19*
+*Last updated: 2026-01-22*
