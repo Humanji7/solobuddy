@@ -71,6 +71,10 @@ See `{baseDir}/modules/twitter-expert.md`
 Proactive engagement — monitors watchlist, suggests comments.
 Requires: `bird` CLI. See `{baseDir}/modules/twitter-monitor.md`
 
+### Humanizer
+Remove AI writing patterns, add human soul to drafts.
+See `{baseDir}/references/humanizer.md`
+
 ### Soul Wizard
 Create project personality from documentation.
 See `{baseDir}/references/soul-wizard.md`
@@ -169,6 +173,7 @@ All callbacks use prefix `sb:`:
 - `sb:publish` — commit and push
 - `sb:activity` — show project activity
 - `sb:twitter` — check twitter opportunities
+- `sb:humanize` — apply humanizer to current draft
 
 ### Main Menu
 
@@ -196,7 +201,7 @@ After generating content:
 ```json
 [
   [{"text":"💾 Save draft","callback_data":"sb:save_draft"}],
-  [{"text":"🔄 Regenerate","callback_data":"sb:regenerate"}],
+  [{"text":"🧹 Humanize","callback_data":"sb:humanize"}, {"text":"🔄 Regenerate","callback_data":"sb:regenerate"}],
   [{"text":"◀️ Menu","callback_data":"sb:menu"}]
 ]
 ```
@@ -207,7 +212,10 @@ After generating content:
 2. Read `{baseDir}/prompts/content.md` for rules
 3. Read `{baseDir}/prompts/profile.md` for voice
 4. Generate in configured voice
-5. Show buttons: Save / Regenerate / Menu
+5. **Read `{baseDir}/references/humanizer.md` and apply humanization rules**
+6. Show buttons: Save / Humanize / Regenerate / Menu
+
+**IMPORTANT**: Always humanize before showing the draft. Remove AI patterns, add soul.
 
 ## Soul Creation
 
