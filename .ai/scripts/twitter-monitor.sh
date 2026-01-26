@@ -4,9 +4,14 @@
 
 set -euo pipefail
 
-# Bird CLI credentials
-export AUTH_TOKEN="${AUTH_TOKEN:-c1c6f92385d6e2e34092fec5b5b1e7759491dd5c}"
-export CT0="${CT0:-845c0fad8f425572d6faeb5b234c1a012e05b6f4de5512695937f2ad29a53f65252bb99a154925c0a09262798ffcd9ee1a2d8287f03ba71ab32f2629dced4a59665694dac150a6f642c319e90c267e79}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load credentials from macOS Keychain (secure storage)
+source "$SCRIPT_DIR/lib/credentials.sh"
+export_bird_credentials || {
+    echo "ERROR: Failed to load credentials. Run: .ai/scripts/setup-credentials.sh" >&2
+    exit 1
+}
 
 CONFIG="$HOME/.clawdbot/clawdbot.json"
 DATA_DIR="$HOME/projects/bip-buddy/data/twitter"
@@ -33,23 +38,44 @@ if [ ! -f "$CONFIG" ]; then
     exit 1
 fi
 
-WATCHLIST=$(jq -r '.twitter.watchlist[]' "$CONFIG" 2>/dev/null)
 MAX_TWEETS=$(jq -r '.twitter.maxTweetsPerUser // 5' "$CONFIG" 2>/dev/null)
 
-if [ -z "$WATCHLIST" ]; then
+# Validate MAX_TWEETS is numeric
+[[ "$MAX_TWEETS" =~ ^[0-9]+$ ]] || MAX_TWEETS=5
+
+# Check watchlist exists
+WATCHLIST_COUNT=$(jq -r '.twitter.watchlist | length' "$CONFIG" 2>/dev/null)
+if [ "$WATCHLIST_COUNT" = "0" ] || [ -z "$WATCHLIST_COUNT" ]; then
     log "ERROR: Watchlist is empty in config"
     exit 1
 fi
 
+# Validate Twitter handle format (alphanumeric + underscore, max 15 chars)
+validate_handle() {
+    local handle="$1"
+    if [[ "$handle" =~ ^[a-zA-Z0-9_]{1,15}$ ]]; then
+        return 0
+    else
+        log "  WARNING: Invalid handle format, skipping: $handle"
+        return 1
+    fi
+}
+
 log "Starting Twitter monitor..."
-log "Watchlist: $(echo $WATCHLIST | tr '\n' ' ')"
+log "Watchlist: $(jq -r '.twitter.watchlist | join(" ")' "$CONFIG")"
 
 # Output file for this run
 OUTPUT_FILE="$DATA_DIR/latest-fetch.json"
-echo '{"fetchedAt":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","tweets":[]}' > "$OUTPUT_FILE"
+printf '{"fetchedAt":"%s","tweets":[]}' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$OUTPUT_FILE"
 
-# Fetch tweets for each handle
-for handle in $WATCHLIST; do
+# Fetch tweets for each handle (safe iteration with read)
+while IFS= read -r handle; do
+    # Skip empty lines
+    [ -z "$handle" ] && continue
+
+    # Validate handle format (prevent command injection)
+    validate_handle "$handle" || continue
+
     log "Fetching tweets from @$handle..."
 
     TWEETS=$(bird user-tweets "$handle" -n "$MAX_TWEETS" --json --plain 2>/dev/null || echo '[]')
@@ -64,7 +90,7 @@ for handle in $WATCHLIST; do
 
     # Rate limit protection
     sleep 2
-done
+done < <(jq -r '.twitter.watchlist[]' "$CONFIG" 2>/dev/null)
 
 TOTAL=$(jq '.tweets | length' "$OUTPUT_FILE")
 log "Monitor complete. Total tweets fetched: $TOTAL"

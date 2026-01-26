@@ -9,9 +9,13 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DATA_DIR="$PROJECT_ROOT/data"
 DB_FILE="$DATA_DIR/bip.db"
 
-# Bird CLI credentials
-export AUTH_TOKEN="${AUTH_TOKEN:-c1c6f92385d6e2e34092fec5b5b1e7759491dd5c}"
-export CT0="${CT0:-845c0fad8f425572d6faeb5b234c1a012e05b6f4de5512695937f2ad29a53f65252bb99a154925c0a09262798ffcd9ee1a2d8287f03ba71ab32f2629dced4a59665694dac150a6f642c319e90c267e79}"
+# Load credentials from macOS Keychain (secure storage)
+source "$SCRIPT_DIR/lib/credentials.sh"
+source "$SCRIPT_DIR/lib/sql-safe.sh"
+export_bird_credentials || {
+    echo "ERROR: Failed to load credentials. Run: .ai/scripts/setup-credentials.sh" >&2
+    exit 1
+}
 
 TWITTER_HANDLE="Toporcalibur"
 MAX_TWEETS=20
@@ -107,18 +111,25 @@ for i in $(seq 0 $((TWEET_COUNT - 1))); do
         continue
     fi
 
-    TEXT=$(jq -r ".[$i].text" < "$TWEETS_JSON" 2>/dev/null | sed "s/'/''/g")  # Escape single quotes for SQL
+    TEXT=$(jq -r ".[$i].text" < "$TWEETS_JSON" 2>/dev/null)
     CREATED_AT=$(jq -r ".[$i].createdAt" < "$TWEETS_JSON" 2>/dev/null)
     LIKES=$(jq -r ".[$i].likeCount // 0" < "$TWEETS_JSON" 2>/dev/null)
     REPLIES=$(jq -r ".[$i].replyCount // 0" < "$TWEETS_JSON" 2>/dev/null)
     RETWEETS=$(jq -r ".[$i].retweetCount // 0" < "$TWEETS_JSON" 2>/dev/null)
     VIEWS=$(jq -r ".[$i]._raw.views.count // 0" < "$TWEETS_JSON" 2>/dev/null)
 
-    # Validate numeric fields (SQL injection protection)
+    # Validate numeric fields (defaults to 0 if invalid)
     [[ "$LIKES" =~ ^[0-9]+$ ]] || LIKES=0
     [[ "$REPLIES" =~ ^[0-9]+$ ]] || REPLIES=0
     [[ "$RETWEETS" =~ ^[0-9]+$ ]] || RETWEETS=0
     [[ "$VIEWS" =~ ^[0-9]+$ ]] || VIEWS=0
+
+    # Validate tweet_id format (must be numeric)
+    if ! sql_validate_tweet_id "$TWEET_ID" 2>/dev/null; then
+        log "  WARNING: Invalid tweet_id format: $TWEET_ID, skipping"
+        echo "ERROR" >> "$TEMP_LOG"
+        continue
+    fi
 
     # Convert Twitter date format to SQLite datetime
     # Example: "Sat Jan 17 23:25:16 +0000 2026" -> "2026-01-17 23:25:16"
@@ -130,36 +141,21 @@ for i in $(seq 0 $((TWEET_COUNT - 1))); do
         continue
     fi
 
-    # Check if tweet exists
-    EXISTS=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM tweets WHERE tweet_id='$TWEET_ID';")
-
-    if [ "$EXISTS" = "0" ]; then
-        # Insert new tweet
-        sqlite3 "$DB_FILE" << SQL
-INSERT INTO tweets (tweet_id, content, created_at, likes, replies, retweets, views)
-VALUES ('$TWEET_ID', '$TEXT', '$CREATED_AT_SQL', $LIKES, $REPLIES, $RETWEETS, $VIEWS);
-SQL
-        if [ $? -eq 0 ]; then
-            echo "INSERTED" >> "$TEMP_LOG"
-        else
-            log "  ERROR: Failed to insert tweet $TWEET_ID"
-            echo "ERROR" >> "$TEMP_LOG"
-        fi
-    else
-        # Update metrics for existing tweet
-        sqlite3 "$DB_FILE" << SQL
-UPDATE tweets
-SET likes = $LIKES,
-    replies = $REPLIES,
-    retweets = $RETWEETS,
-    views = $VIEWS,
-    snapshot_at = CURRENT_TIMESTAMP
-WHERE tweet_id = '$TWEET_ID';
-SQL
-        if [ $? -eq 0 ]; then
+    # Check if tweet exists (using safe function)
+    if sql_tweet_exists "$DB_FILE" "$TWEET_ID"; then
+        # Update metrics for existing tweet (using safe function)
+        if sql_update_tweet_metrics "$DB_FILE" "$TWEET_ID" "$LIKES" "$REPLIES" "$RETWEETS" "$VIEWS"; then
             echo "UPDATED" >> "$TEMP_LOG"
         else
             log "  ERROR: Failed to update tweet $TWEET_ID"
+            echo "ERROR" >> "$TEMP_LOG"
+        fi
+    else
+        # Insert new tweet (using safe function with proper escaping)
+        if sql_insert_tweet "$DB_FILE" "$TWEET_ID" "$TEXT" "$CREATED_AT_SQL" "$LIKES" "$REPLIES" "$RETWEETS" "$VIEWS"; then
+            echo "INSERTED" >> "$TEMP_LOG"
+        else
+            log "  ERROR: Failed to insert tweet $TWEET_ID"
             echo "ERROR" >> "$TEMP_LOG"
         fi
     fi

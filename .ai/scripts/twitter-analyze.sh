@@ -59,8 +59,13 @@ fi
 
 sanitize() {
     echo "$1" | sed -E \
-        -e 's/(token|key|secret|AUTH_TOKEN|CT0|botToken)=[^&[:space:]]*/\1=***REDACTED***/gi' \
-        -e 's/bot[0-9]+:[A-Za-z0-9_-]+/bot***:***REDACTED***/g'
+        -e 's/(token|key|secret|AUTH_TOKEN|CT0|botToken|api_key|apikey|password|credential)=[^&[:space:]]*/\1=***REDACTED***/gi' \
+        -e 's/(token|key|secret|AUTH_TOKEN|CT0|botToken|api_key|apikey|password|credential)%3[Dd][^&[:space:]]*/\1%3D***REDACTED***/gi' \
+        -e 's/bot[0-9]+:[A-Za-z0-9_-]+/bot***:***REDACTED***/g' \
+        -e 's/"(token|key|secret|botToken|api_key|apikey|password)"[[:space:]]*:[[:space:]]*"[^"]+"/"\1":"***REDACTED***"/gi' \
+        -e 's/Bearer [A-Za-z0-9_-]+/Bearer ***REDACTED***/g' \
+        -e 's/sk-[A-Za-z0-9_-]+/sk-***REDACTED***/g' \
+        -e 's/gsk_[A-Za-z0-9_-]+/gsk_***REDACTED***/g'
 }
 
 log() {

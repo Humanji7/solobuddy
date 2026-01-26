@@ -10,6 +10,9 @@ DATA_DIR="$PROJECT_ROOT/data"
 DB_FILE="$DATA_DIR/bip.db"
 CLAWDBOT_CONFIG="$HOME/.clawdbot/clawdbot.json"
 
+# Load safe SQL functions
+source "$SCRIPT_DIR/lib/sql-safe.sh"
+
 TWITTER_HANDLE="Toporcalibur"
 
 # Alert thresholds
@@ -92,30 +95,18 @@ send_telegram() {
     fi
 }
 
-# Function to check if alert was already sent
+# Function to check if alert was already sent (uses safe SQL from lib)
 alert_sent() {
     local alert_type="$1"
     local ref_id="$2"
-    local count
-
-    # Escape single quotes for SQL injection protection
-    alert_type="${alert_type//\'/\'\'}"
-    ref_id="${ref_id//\'/\'\'}"
-
-    count=$(sqlite3 "$DB_FILE" "SELECT COUNT(*) FROM alerts_sent WHERE alert_type='$alert_type' AND ref_id='$ref_id';")
-    [ "$count" -gt 0 ]
+    sql_alert_exists "$DB_FILE" "$alert_type" "$ref_id"
 }
 
-# Function to mark alert as sent
+# Function to mark alert as sent (uses safe SQL from lib)
 mark_alert_sent() {
     local alert_type="$1"
     local ref_id="$2"
-
-    # Escape single quotes for SQL injection protection
-    alert_type="${alert_type//\'/\'\'}"
-    ref_id="${ref_id//\'/\'\'}"
-
-    sqlite3 "$DB_FILE" "INSERT INTO alerts_sent (alert_type, ref_id) VALUES ('$alert_type', '$ref_id');"
+    sql_insert_alert "$DB_FILE" "$alert_type" "$ref_id"
 }
 
 # 1. Check tweet growth alerts

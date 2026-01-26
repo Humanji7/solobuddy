@@ -1,9 +1,15 @@
 # Dependencies
 node_modules/
 
-# Environment
+# Environment & Secrets
 .env
+.env.*
+!.env.example
 *.local
+auth-profiles.json
+*.key
+*.pem
+*.secret
 
 # OS
 .DS_Store
