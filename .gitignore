@@ -35,3 +35,9 @@ archive/
 # ClawdHub test artifacts
 skills/
 .clawdhub/
+
+# Claude Code
+.claude/
+
+# Trash
+TRASH/
