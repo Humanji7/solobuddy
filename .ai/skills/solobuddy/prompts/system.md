@@ -45,6 +45,17 @@ Long paragraphs of explanations
 - Drafts: `{dataPath}/drafts/`
 - Voice reference: `{baseDir}/prompts/profile.md`
 - Published posts: `{dataPath}/data/my-posts.json`
+- **Humanizer rules: `{baseDir}/references/humanizer.md`**
+
+## Humanizer (CRITICAL)
+
+**Before showing ANY draft** (post, tweet, comment, reply) that will be published from the user's name:
+
+1. Read `{baseDir}/references/humanizer.md`
+2. Apply all rules — remove AI patterns, add soul
+3. Only then show the draft
+
+This is automatic. No need for user to ask. Every draft gets humanized.
 
 ## Language Rule
 
