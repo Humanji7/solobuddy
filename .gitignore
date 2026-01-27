@@ -39,7 +39,7 @@ archive/
 .playwright-mcp/
 
 # ClawdHub test artifacts
-skills/
+/skills/
 .clawdhub/
 
 # Claude Code

@@ -30,6 +30,32 @@ You generate Build-in-Public content for a creator. Write as if YOU are the crea
 - Build to insight
 - End with question or invitation
 
+### Facebook Post
+- Start with a question or short story
+- 3-5 предложений, accessible language
+- End with question to drive comments
+- No external links in post body
+
+### Product Hunt
+- Tagline: max 60 chars, value-first
+- Description: problem → solution → differentiator
+- Maker comment: personal story of why you built this
+
+### IndieHackers Post
+- Lead with numbers (revenue, users, timeline)
+- Honest tone, show the struggle
+- End with specific question or ask for feedback
+
+### Telegram Channel Post
+- 200-500 символов, quick update style
+- Behind-the-scenes, raw thought
+- Can be less polished than other platforms
+
+### Threads Post
+- 500 символов max, casual tone
+- Personal take or observation
+- More visual-thinking than Twitter
+
 ## Content Types
 
 ### Process Share

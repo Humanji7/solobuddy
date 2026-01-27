@@ -67,6 +67,30 @@ See `{baseDir}/prompts/content.md` for rules.
 Content strategy for X/Twitter with 2025 algorithm insights.
 See `{baseDir}/modules/twitter-expert.md`
 
+### LinkedIn Expert
+Content strategy for LinkedIn with algorithm insights.
+See `{baseDir}/modules/linkedin-expert.md`
+
+### Facebook Expert
+Content strategy for Facebook groups and pages.
+See `{baseDir}/modules/facebook-expert.md`
+
+### Product Hunt Expert
+Launch strategy and community engagement for Product Hunt.
+See `{baseDir}/modules/producthunt-expert.md`
+
+### IndieHackers Expert
+Community posts and revenue reports for IndieHackers.
+See `{baseDir}/modules/indiehackers-expert.md`
+
+### Telegram Expert
+Channel content strategy for Telegram.
+See `{baseDir}/modules/telegram-expert.md`
+
+### Threads Expert
+Content strategy for Threads.
+See `{baseDir}/modules/threads-expert.md`
+
 ### Twitter Monitor (optional)
 Proactive engagement — monitors watchlist, suggests comments.
 Requires: `bird` CLI. See `{baseDir}/modules/twitter-monitor.md`
