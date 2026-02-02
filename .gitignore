@@ -47,3 +47,6 @@ archive/
 
 # Trash
 TRASH/
+__pycache__/
+*.db-wal
+*.db-shm
