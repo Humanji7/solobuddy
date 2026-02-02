@@ -1,90 +1,180 @@
-# HOOK — Session Handoff
+# HOOK — Vision Integration
 
-**Status:** IDLE
-**Last updated:** 2026-01-29 21:30
-
----
-
-## System Health (verified 2026-01-29)
-
-### launchd Services
-
-| Service | Status | Interval |
-|---------|--------|----------|
-| `com.clawdbot.gateway` | Running | постоянно |
-| `com.bipbuddy.twitter-mirror` | Works | каждые 2ч |
-| `com.clawdbot.twitter-monitor` | Works | по расписанию |
-
-### ClawdBot (@solobuddybot)
-
-- Telegram bot active (`clawdbot health` = ok)
-- OAuth refreshed 2026-01-29 (token valid 1 year)
-- Config: `~/.clawdbot/agents/main/agent/auth-profiles.json`
-- Telegram token rotated 2026-01-29
+**Status:** ACTIVE
+**Created:** 2026-02-02
+**Next Session:** Встраивание Vision в bip-buddy
 
 ---
 
-## Session Notes
+## Context
 
-### 2026-01-29: Security Audit & Fixes
+Спроектировали Vision — AI-ассистент (персональный PR-директор). Решили встраивать в существующий bip-buddy, а не отдельный репо.
 
-**Проблема:** OAuth токен Anthropic истёк, бот не работал.
-
-**Root cause:** `clawdbot models auth add` создал `mode: "token"` который ищет ANTHROPIC_API_KEY в ENV, но launchd plist не содержал эту переменную.
-
-**Исправлено:**
-1. Добавлен ANTHROPIC_API_KEY в `~/Library/LaunchAgents/com.clawdbot.gateway.plist`
-2. Gateway перезапущен — бот заработал
-
-**Security Audit выполнен:**
-
-| Категория | Статус |
-|-----------|--------|
-| macOS Firewall | Включён + stealth mode |
-| SMB Guest Access | Отключён |
-| Screen Lock | Настроен (пароль сразу) |
-| plist permissions | Исправлены (600) |
-| .env с секретами | Удалён |
-| TRASH/ со старыми секретами | Удалён |
-
-**Ротация токенов:**
-
-| Токен | Статус | Хранение |
-|-------|--------|----------|
-| GROQ API Key | Ротирован | macOS Keychain (`bip-buddy/groq-api-key`) |
-| GitHub OAuth | Ротирован | macOS Keychain (`bip-buddy/github-client-*`) |
-| Telegram Bot | Ротирован | `~/.clawdbot/clawdbot.json` |
-| Anthropic OAuth | Был обновлён ранее | `auth-profiles.json` + launchd plist |
-
-**Осталось:**
-- [x] Удалить временный `.env` — удалён 2026-01-29
-- [ ] Очистить git историю от старых токенов (опционально, если репо публичное)
+**Дизайн-документ:** `docs/plans/2026-02-02-vision-ai-assistant-design.md`
 
 ---
 
-## Quick Commands
+## Current Molecule: Подготовка к интеграции
 
-```bash
-# Проверка безопасности
-/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
-ls -la ~/Library/LaunchAgents/com.clawdbot.gateway.plist
+### Pre-flight Checklist:
 
-# ClawdBot
-clawdbot health
-clawdbot models status
+- [ ] Создать структуру `vision/` в bip-buddy
+- [ ] Инициализировать `pyproject.toml` с uv
+- [ ] Расширить схему `bip.db` (миграция 002)
+- [ ] Портировать `lib/sql-safe.sh` → Python
+- [ ] Портировать `lib/credentials.sh` → Python keyring
+- [ ] Мигрировать промпты из `solobuddy/` → `vision/prompts/`
 
-# Keychain credentials
-security find-generic-password -s "bip-buddy" -a "groq-api-key" -w
-security find-generic-password -s "bip-buddy" -a "github-client-secret" -w
+---
 
-# Логи
-tail -20 ~/.clawdbot/logs/gateway.log
-tail -20 ~/.clawdbot/logs/gateway.err.log
+## Assets to Reuse
+
+### Промпты (копировать):
+```
+.ai/skills/solobuddy/prompts/system.md       → vision/prompts/system.md
+.ai/skills/solobuddy/prompts/content.md      → vision/prompts/content.md
+.ai/skills/solobuddy/modules/twitter-expert.md → vision/prompts/twitter.md
+.ai/skills/solobuddy/references/humanizer.md → vision/prompts/humanizer.md
+```
+
+### Bash → Python:
+```
+.ai/scripts/lib/sql-safe.sh    → vision/data/utils.py
+.ai/scripts/lib/credentials.sh → vision/utils/keychain.py
+```
+
+### SQLite (расширить bip.db):
+```
+Добавить таблицы:
+- assistant_profile
+- memory
+- ideas
+- conversations
+- authenticity_checks
+- post_metrics
 ```
 
 ---
 
-## Known Issues
+## Target Structure
 
-- В БД есть тестовые данные: `TEST_TWEET_001`
-- Git история содержит старые токены (коммиты `5f17505`, `7cc4942`, `b141ff8`) — требует очистки если репо публичное
+```
+bip-buddy/
+├── vision/                    # 🆕
+│   ├── __init__.py
+│   ├── main.py
+│   ├── core/
+│   │   ├── agent.py
+│   │   ├── router.py
+│   │   ├── context.py
+│   │   └── protocols.py
+│   ├── skills/
+│   ├── llm/
+│   ├── integrations/
+│   ├── data/
+│   │   ├── database.py
+│   │   ├── migrations/
+│   │   └── repositories/
+│   ├── prompts/
+│   └── utils/
+│
+├── .ai/                       # Оставить (Bird CLI)
+├── data/bip.db               # Расширить
+└── pyproject.toml            # 🆕
+```
+
+---
+
+## Commands for Next Session
+
+```bash
+# 1. Проверить состояние
+cat .agent/HOOK.md
+
+# 2. Создать структуру
+mkdir -p vision/{core,skills,llm/providers,integrations/{telegram,twitter,whisper},data/{migrations,repositories},prompts,utils}
+touch vision/__init__.py vision/main.py
+
+# 3. Инициализировать Python
+uv init --name bip-buddy
+uv add anthropic openai structlog aiosqlite
+
+# 4. Скопировать промпты
+cp .ai/skills/solobuddy/prompts/system.md vision/prompts/
+cp .ai/skills/solobuddy/prompts/content.md vision/prompts/
+cp .ai/skills/solobuddy/modules/twitter-expert.md vision/prompts/twitter.md
+cp .ai/skills/solobuddy/references/humanizer.md vision/prompts/
+
+# 5. Создать миграцию
+# → vision/data/migrations/002_vision_tables.sql
+
+# 6. Начать с контрактов
+# → vision/core/protocols.py
+```
+
+---
+
+## Done / Current / Pending
+
+| Status | Item |
+|--------|------|
+| ✅ Done | Дизайн Vision (9 capabilities) |
+| ✅ Done | Ревью: архитектура, БД, agent loop, UX, skills |
+| ✅ Done | Дизайн-документ в docs/plans/ |
+| ✅ Done | Решение: встраиваемся в bip-buddy |
+| 🔄 Current | Подготовка к интеграции |
+| ⏳ Pending | Создание структуры vision/ |
+| ⏳ Pending | pyproject.toml + dependencies |
+| ⏳ Pending | Миграция БД (002_vision_tables.sql) |
+| ⏳ Pending | Портирование промптов |
+| ⏳ Pending | Phase 1: Core (protocols, agent, router) |
+
+---
+
+## Implementation Phases
+
+### Phase 1: Core (первый приоритет)
+- [ ] vision/core/protocols.py (Skill, LLMProvider contracts)
+- [ ] vision/data/database.py (SQLite + pragmas)
+- [ ] vision/data/migrations/002_vision_tables.sql
+- [ ] vision/core/agent.py (main loop, graceful shutdown)
+- [ ] vision/llm/client.py (Claude + OpenAI fallback)
+
+### Phase 2: Skills
+- [ ] vision/skills/base.py
+- [ ] vision/skills/content_gen.py
+- [ ] vision/skills/idea_bank.py
+- [ ] vision/skills/chat.py (fallback)
+
+### Phase 3: Integrations
+- [ ] vision/integrations/telegram/client.py (MCP wrapper)
+- [ ] vision/integrations/whisper/adapter.py
+- [ ] vision/integrations/twitter/adapter.py (Bird CLI)
+
+---
+
+## System Health (from previous session)
+
+### launchd Services
+| Service | Status |
+|---------|--------|
+| `com.clawdbot.gateway` | Running (будет заменён Vision) |
+| `com.bipbuddy.twitter-mirror` | Works |
+
+### Security
+- macOS Firewall: включён
+- Keychain credentials: настроены
+- plist permissions: 600
+
+---
+
+## Handoff Note
+
+**Сессия 2026-02-02:**
+Полный дизайн Vision с 5 экспертными ревью (архитектор, DBA, Python dev, UX panel, FAANG panel). Решили встраивать в bip-buddy — переиспользуем ~40% (промпты, SQLite, Bird CLI).
+
+Следующая сессия: создать структуру и начать Phase 1 (Core).
+
+---
+
+*Last updated: 2026-02-02*
